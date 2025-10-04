@@ -1,0 +1,659 @@
+# 🚀 新人エンジニア向けGit完全ガイド
+
+**うさうさ先生が教える、実務で使えるGitの基本から実践まで**
+
+---
+
+## 📚 目次
+
+1. [Gitって何？なぜ必要？](#1-gitって何なぜ必要)
+2. [最初の設定（5分でできる）](#2-最初の設定5分でできる)
+3. [基本の3ステップ（add → commit → push）](#3-基本の3ステップadd--commit--push)
+4. [ブランチの使い方](#4-ブランチの使い方)
+5. [チーム開発の流れ](#5-チーム開発の流れ)
+6. [よくあるエラーと解決法](#6-よくあるエラーと解決法)
+7. [絶対に覚えるべきコマンド10選](#7-絶対に覚えるべきコマンド10選)
+8. [やってはいけないこと](#8-やってはいけないこと)
+
+---
+
+## 1. Gitって何？なぜ必要？
+
+### 📖 Gitとは？
+
+**Git = コードの「タイムマシン」+ 「共同作業ノート」**
+
+```
+普通のファイル保存:
+ファイル.txt
+ファイル_最新.txt
+ファイル_最新2.txt
+ファイル_本当に最新.txt  ← どれが正しい？
+
+Gitを使うと:
+- 全ての変更履歴が自動保存
+- いつでも過去に戻れる
+- 誰が何を変更したかわかる
+- 複数人で同時作業できる
+```
+
+### 🎯 なぜ必要？
+
+| 問題 | Gitなしの場合 | Gitありの場合 |
+|------|-------------|-------------|
+| バグが出た | いつ壊れた？誰が変更した？ | 履歴で原因特定 |
+| 複数人で開発 | ファイルを上書きしあう | 自動で統合 |
+| 実験したい | 元に戻せなくなる | 安心して試せる |
+| バックアップ | USBやクラウドに手動保存 | 自動で全履歴保存 |
+
+---
+
+## 2. 最初の設定（5分でできる）
+
+### ステップ1: 自己紹介を登録
+
+```bash
+# あなたの名前を登録
+git config --global user.name "田中太郎"
+
+# メールアドレスを登録
+git config --global user.email "tanaka@example.com"
+
+# 確認
+git config --global --list
+```
+
+**なぜ必要？**
+- コミット（変更の記録）に「誰が変更したか」が残る
+- チーム開発で重要
+
+### ステップ2: エディタを設定（任意）
+
+```bash
+# VSCodeを使う場合
+git config --global core.editor "code --wait"
+```
+
+### ステップ3: 初期設定完了チェック
+
+```bash
+# 設定を確認
+git config --global user.name
+git config --global user.email
+```
+
+---
+
+## 3. 基本の3ステップ（add → commit → push）
+
+### 📦 Gitの3つのエリア
+
+```
+[作業フォルダ] → [ステージング] → [ローカルリポジトリ] → [リモートリポジトリ]
+   ↓ add          ↓ commit           ↓ push
+ 編集中           準備完了           保存完了          チームで共有
+```
+
+### ステップ1: add（ステージングに追加）
+
+```bash
+# 変更したファイルを確認
+git status
+
+# 特定のファイルをステージング
+git add login.js
+
+# 全ファイルをステージング
+git add .
+
+# ステージング状態を確認
+git status
+```
+
+**何をしている？**
+- 「このファイルを次のコミットに含めます」という宣言
+- まだ保存はされていない
+
+### ステップ2: commit（ローカルに保存）
+
+```bash
+# コミットを作成
+git commit -m "feat: ログイン機能を追加"
+
+# コミット履歴を確認
+git log --oneline
+```
+
+**コミットメッセージの書き方:**
+
+```bash
+# ✅ 良い例
+git commit -m "feat: ユーザー登録機能を追加"
+git commit -m "fix: ログイン時のエラーを修正"
+git commit -m "docs: READMEに使い方を追記"
+
+# ❌ 悪い例
+git commit -m "修正"
+git commit -m "あああ"
+git commit -m "とりあえず保存"
+```
+
+**接頭辞の使い分け:**
+
+| 接頭辞 | 意味 | 例 |
+|--------|------|-----|
+| `feat:` | 新機能追加 | feat: 検索機能を追加 |
+| `fix:` | バグ修正 | fix: ログインエラーを修正 |
+| `docs:` | ドキュメント | docs: READMEを更新 |
+| `style:` | コード整形 | style: インデント修正 |
+| `refactor:` | リファクタリング | refactor: 関数を整理 |
+| `test:` | テスト追加 | test: ログインのテスト追加 |
+
+### ステップ3: push（リモートに送信）
+
+```bash
+# リモートに送信
+git push origin main
+
+# 初回プッシュの場合
+git push -u origin feature/login
+```
+
+**何をしている？**
+- ローカルの変更をGitHub等に送信
+- チームメンバーと共有
+
+---
+
+## 4. ブランチの使い方
+
+### 🌳 ブランチとは？
+
+**ブランチ = 並行世界**
+
+```
+main（本番）: ─●─●─●─●
+                  ↓
+feature/login:    ●─●  ← 新機能を開発中
+```
+
+### 基本的なブランチ操作
+
+```bash
+# 現在のブランチを確認
+git branch
+
+# 新しいブランチを作成して移動
+git switch -c feature/login
+
+# 既存のブランチに移動
+git switch main
+
+# ブランチ一覧を表示
+git branch -a
+
+# ブランチを削除
+git branch -d feature/login
+```
+
+### 実践例：新機能開発
+
+```bash
+# 1. 最新のmainを取得
+git switch main
+git pull origin main
+
+# 2. 新しいブランチを作成
+git switch -c feature/user-registration
+
+# 3. コードを編集...
+
+# 4. コミット
+git add .
+git commit -m "feat: ユーザー登録機能を追加"
+
+# 5. プッシュ
+git push -u origin feature/user-registration
+
+# 6. GitHubでプルリクエスト作成
+```
+
+---
+
+## 5. チーム開発の流れ
+
+### 📅 毎朝のルーティン
+
+```bash
+# 1. mainブランチに移動
+git switch main
+
+# 2. 最新のコードを取得
+git pull origin main
+
+# 3. 今日のタスク用ブランチを作成
+git switch -c feature/new-task
+
+# 4. 開発開始！
+```
+
+### 🔄 作業中の更新取り込み
+
+```bash
+# 作業中にmainが更新された場合
+
+# 1. 現在の作業を一時保存
+git add .
+git commit -m "WIP: 作業中"
+
+# 2. mainの最新を取得
+git switch main
+git pull origin main
+
+# 3. 作業ブランチに戻る
+git switch feature/login
+
+# 4. mainの変更を取り込む
+git merge main
+
+# 5. 競合があれば解決
+# VSCodeで差分を確認して修正
+
+# 6. 作業続行
+```
+
+### 📤 プルリクエストの流れ
+
+```bash
+# 1. 作業完了後、最終確認
+git status
+git diff
+
+# 2. コミット
+git add .
+git commit -m "feat: ログイン機能を完成"
+
+# 3. プッシュ
+git push origin feature/login
+
+# 4. GitHubでPR作成
+# - Base: main
+# - Compare: feature/login
+# - タイトル: feat: ログイン機能を追加
+# - 説明: 変更内容を詳しく書く
+
+# 5. レビュー待ち
+
+# 6. 承認後、マージ
+
+# 7. ローカルで後片付け
+git switch main
+git pull origin main
+git branch -d feature/login
+```
+
+---
+
+## 6. よくあるエラーと解決法
+
+### エラー1: 変更が上書きされる警告
+
+```
+error: Your local changes would be overwritten by checkout
+```
+
+**原因:** 変更をコミットせずにブランチ切り替え
+
+**解決法:**
+
+```bash
+# 方法1: 一時保存（推奨）
+git stash
+git switch 別のブランチ
+# 作業後
+git switch 元のブランチ
+git stash pop
+
+# 方法2: コミット
+git add .
+git commit -m "WIP: 一時保存"
+```
+
+---
+
+### エラー2: プッシュが拒否される
+
+```
+! [rejected] main -> main (non-fast-forward)
+```
+
+**原因:** リモートが更新されている
+
+**解決法:**
+
+```bash
+# ✅ 正しい方法
+git pull origin main
+# 競合があれば解決
+git push origin main
+
+# ❌ 絶対ダメ
+git push --force  # チームメンバーの変更が消える！
+```
+
+---
+
+### エラー3: 競合（Conflict）が発生
+
+```
+CONFLICT (content): Merge conflict in login.js
+```
+
+**解決手順:**
+
+```bash
+# 1. 競合ファイルを確認
+git status
+
+# 2. ファイルを開くと以下のような表示
+<<<<<<< HEAD
+自分の変更
+=======
+相手の変更
+>>>>>>> main
+
+# 3. VSCodeで解決
+# 「Accept Current Change」（自分の変更）
+# 「Accept Incoming Change」（相手の変更）
+# 「Accept Both Changes」（両方残す）
+# を選択
+
+# 4. マーカー（<<<, ===, >>>）を削除
+
+# 5. 保存してコミット
+git add .
+git commit -m "Merge: 競合を解決"
+```
+
+---
+
+## 7. 絶対に覚えるべきコマンド10選
+
+### 🎯 新人が最初に覚えるべきコマンド
+
+```bash
+# 1. 状態確認（最重要！）
+git status
+
+# 2. 変更をステージング
+git add .
+
+# 3. コミット
+git commit -m "メッセージ"
+
+# 4. プッシュ
+git push origin ブランチ名
+
+# 5. プル（最新を取得）
+git pull origin main
+
+# 6. ブランチ作成＋移動
+git switch -c feature/new-task
+
+# 7. ブランチ移動
+git switch main
+
+# 8. 履歴確認
+git log --oneline
+
+# 9. 差分確認
+git diff
+
+# 10. 一時保存
+git stash
+```
+
+---
+
+## 8. やってはいけないこと
+
+### 🚫 絶対禁止
+
+```bash
+# ❌ 1. 機密情報をコミット
+git add .env  # APIキー、パスワードは絶対NG！
+
+# ✅ 正しい方法
+# .gitignore に追加
+echo ".env" >> .gitignore
+git add .gitignore
+```
+
+```bash
+# ❌ 2. mainに直接プッシュ
+git push origin main  # チーム開発では禁止！
+
+# ✅ 正しい方法
+git switch -c feature/xxx
+# 作業後
+git push origin feature/xxx
+# PRを作成
+```
+
+```bash
+# ❌ 3. force push
+git push --force  # チームメンバーの変更が消える！
+
+# ✅ 正しい方法
+git pull
+# 競合を解決
+git push
+```
+
+```bash
+# ❌ 4. push後にreset --hard
+git reset --hard HEAD~1  # リモートと乖離する
+git push
+
+# ✅ 正しい方法
+git revert HEAD  # 安全に取り消し
+git push
+```
+
+---
+
+## 9. 実践チェックリスト
+
+### ✅ 毎日の作業前
+
+```
+□ git status で状態確認
+□ git pull で最新を取得
+□ git log で昨日の更新確認
+```
+
+### ✅ コミット前
+
+```
+□ git status で変更ファイル確認
+□ git diff で差分確認
+□ .env など機密情報が含まれていないか確認
+□ コミットメッセージは分かりやすいか
+```
+
+### ✅ プッシュ前
+
+```
+□ テストは通っているか
+□ コミットメッセージは適切か
+□ 不要なファイルが含まれていないか
+```
+
+### ✅ PR作成前
+
+```
+□ 最新のmainを取り込んだか
+□ 競合は解決したか
+□ テストは通っているか
+□ PR説明は詳しく書いたか
+```
+
+---
+
+## 10. トラブル対応フローチャート
+
+```
+間違えた！
+  ↓
+まだaddしていない？
+  YES → git restore ファイル名
+  NO  → ↓
+  
+addしたけどcommitしていない？
+  YES → git restore --staged ファイル名
+  NO  → ↓
+  
+commitしたけどpushしていない？
+  YES → git reset --soft HEAD~1
+  NO  → ↓
+  
+pushしてしまった？
+  YES → git revert HEAD
+        git push
+```
+
+---
+
+## 11. よくある質問
+
+### Q1: addとcommitの違いは？
+
+```bash
+# add: 「このファイルを次のコミットに含めます」
+git add login.js
+
+# commit: 「変更を正式に記録します」
+git commit -m "feat: ログイン機能追加"
+```
+
+**例え:**
+- add = 写真を選ぶ
+- commit = アルバムに貼る
+
+---
+
+### Q2: pullとfetchの違いは？
+
+```bash
+# pull = fetch + merge（即座に反映）
+git pull origin main
+
+# fetch = 取得のみ（安全に確認）
+git fetch origin
+git log HEAD..origin/main  # 差分確認
+git merge origin/main      # 問題なければマージ
+```
+
+**初心者はpullでOK、慎重派はfetch推奨**
+
+---
+
+### Q3: stashって何？
+
+```bash
+# 一時的に変更を退避
+git stash
+
+# 復元
+git stash pop
+
+# 複数保存できる
+git stash save "作業中のログイン機能"
+git stash list
+git stash apply stash@{0}
+```
+
+**例え:** 机の上の書類を引き出しに一時保管
+
+---
+
+## 12. 便利なエイリアス設定
+
+```bash
+# よく使うコマンドを短縮
+git config --global alias.st status
+git config --global alias.sw switch
+git config --global alias.cm "commit -m"
+git config --global alias.lg "log --oneline --graph --all"
+
+# 使い方
+git st       # git status
+git sw main  # git switch main
+git cm "メッセージ"  # git commit -m "メッセージ"
+git lg       # きれいなログ表示
+```
+
+---
+
+## 13. まとめ
+
+### 🎯 新人が最初に覚えること
+
+1. **基本の3ステップ**
+   ```bash
+   git add .
+   git commit -m "メッセージ"
+   git push origin ブランチ名
+   ```
+
+2. **毎朝のルーティン**
+   ```bash
+   git switch main
+   git pull origin main
+   git switch -c feature/今日のタスク
+   ```
+
+3. **困ったら**
+   ```bash
+   git status  # 現在の状態を確認
+   git log     # 履歴を確認
+   ```
+
+4. **絶対にやらないこと**
+   - 機密情報をコミット
+   - mainに直接プッシュ
+   - git push --force
+
+---
+
+### 📚 次のステップ
+
+慣れてきたら学ぶこと:
+- git rebase（履歴の整理）
+- git cherry-pick（特定コミットの取り込み）
+- git bisect（バグ混入コミットの特定）
+- GitHub Actions（CI/CD）
+
+---
+
+**🚀 最後に:**
+
+「Gitは最初は難しく感じますが、毎日使っていれば必ず慣れます！
+
+**大切なのは:**
+1. まず基本の3ステップ（add → commit → push）をマスター
+2. 分からないことはすぐに聞く
+3. 失敗を恐れない（ローカルなら何度でもやり直せる）
+4. git statusとgit logで常に状態確認
+
+最初は完璧を目指さず、まずは使ってみることから始めましょう！」
+
+---
+
+## 参考資料
+
+- [Git公式ドキュメント（日本語）](https://git-scm.com/book/ja/v2)
+- [サル先生のGit入門](https://backlog.com/ja/git-tutorial/)
+- [GitHub Docs](https://docs.github.com/ja)
+
+※ 2025年10月時点の情報です
