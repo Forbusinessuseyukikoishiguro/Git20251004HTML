@@ -1,0 +1,256 @@
+# Selenium自動化完全ガイド - スクリーンショット撮影編
+
+前回の記事に続き、今回はSeleniumでスクリーンショットを撮影する方法を詳しく解説します!
+
+## 追加関数: スクリーンショット撮影
+
+Webページの状態を記録したり、テスト結果を保存したりする際に便利な機能です。
+
+```python
+from selenium.common.exceptions import WebDriverException
+import os
+
+def take_screenshot(driver, filename="screenshot.png"):
+    """
+    スクリーンショットを撮影して保存する関数。
+    
+    Args:
+        driver (WebDriver): WebDriverオブジェクト。
+        filename (str): スクリーンショットの保存先。
+    """
+    try:
+        # 保存先のディレクトリが存在しない場合は作成
+        directory = os.path.dirname(filename)
+        if directory:  # ディレクトリパスが空でない場合のみ作成
+            os.makedirs(directory, exist_ok=True)
+        
+        # スクリーンショットを撮影して保存
+        driver.save_screenshot(filename)
+        print(f"スクリーンショットを保存しました: {filename}")
+        
+    except WebDriverException as e:
+        print(f"スクリーンショットの撮影中にWebDriverエラーが発生しました: {e}")
+    except FileNotFoundError:
+        print(f"指定されたパスが無効です: {filename}")
+    except PermissionError:
+        print(f"保存先にアクセス権がありません: {filename}")
+    except Exception as e:
+        print(f"予期しないエラーが発生しました: {e}")
+```
+
+## 実践例: 検索結果のスクリーンショット保存
+
+すべての関数を組み合わせた完全な自動化スクリプトです。
+
+```python
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import NoSuchElementException, WebDriverException
+import os
+import time
+from datetime import datetime
+
+
+# 前回の関数たち
+def click_element_by_css(driver, css_selector):
+    """CSSセレクタを指定して要素をクリックする"""
+    try:
+        element = driver.find_element(By.CSS_SELECTOR, css_selector)
+        element.click()
+        print(f"CSSセレクタ '{css_selector}' の要素をクリックしました。")
+    except NoSuchElementException:
+        print(f"エラー: CSSセレクタ '{css_selector}' が見つかりませんでした。")
+    except WebDriverException as e:
+        print(f"クリック時にエラーが発生しました: {e}")
+
+
+def input_text_by_xpath(driver, xpath, text):
+    """XPathを指定してフォームにテキストを入力する"""
+    try:
+        form = driver.find_element(By.XPATH, xpath)
+        form.clear()
+        form.send_keys(text)
+        print(f"XPath '{xpath}' に '{text}' を入力しました。")
+    except NoSuchElementException:
+        print(f"エラー: XPath '{xpath}' が見つかりませんでした。")
+    except WebDriverException as e:
+        print(f"入力時にエラーが発生しました: {e}")
+
+
+def input_text_by_css(driver, css_selector, text):
+    """CSSセレクタを指定してフォームにテキストを入力する"""
+    try:
+        form = driver.find_element(By.CSS_SELECTOR, css_selector)
+        form.clear()
+        form.send_keys(text)
+        print(f"CSSセレクタ '{css_selector}' に '{text}' を入力しました。")
+    except NoSuchElementException:
+        print(f"エラー: CSSセレクタ '{css_selector}' が見つかりませんでした。")
+    except WebDriverException as e:
+        print(f"入力時にエラーが発生しました: {e}")
+
+
+def check_checkbox_by_css(driver, css_selector):
+    """CSSセレクタを指定してチェックボックスを選択する"""
+    try:
+        checkbox = driver.find_element(By.CSS_SELECTOR, css_selector)
+        if not checkbox.is_selected():
+            checkbox.click()
+            print(f"CSSセレクタ '{css_selector}' のチェックボックスを選択しました。")
+        else:
+            print(f"CSSセレクタ '{css_selector}' のチェックボックスは既に選択されています。")
+    except NoSuchElementException:
+        print(f"エラー: CSSセレクタ '{css_selector}' が見つかりませんでした。")
+    except WebDriverException as e:
+        print(f"チェックボックス操作時にエラーが発生しました: {e}")
+
+
+def search_and_navigate(driver, search_box_xpath, query, submit_button_xpath=None):
+    """検索ボックスに文字を入力し、画面遷移する"""
+    try:
+        search_box = driver.find_element(By.XPATH, search_box_xpath)
+        search_box.clear()
+        search_box.send_keys(query)
+        print(f"検索ボックスに '{query}' を入力しました。")
+        
+        if submit_button_xpath:
+            try:
+                submit_button = driver.find_element(By.XPATH, submit_button_xpath)
+                submit_button.click()
+                print("送信ボタンをクリックしました。")
+            except NoSuchElementException:
+                print(f"送信ボタンのXPath '{submit_button_xpath}' が見つかりませんでした。")
+                search_box.send_keys(Keys.RETURN)
+                print("Enterキーで検索を実行しました。")
+        else:
+            search_box.send_keys(Keys.RETURN)
+            print("Enterキーを押して検索を実行しました。")
+            
+    except NoSuchElementException:
+        print(f"検索ボックスのXPath '{search_box_xpath}' が見つかりませんでした。")
+    except WebDriverException as e:
+        print(f"WebDriverのエラーが発生しました: {e}")
+    except Exception as e:
+        print(f"予期しないエラーが発生しました: {e}")
+
+
+def take_screenshot(driver, filename="screenshot.png"):
+    """スクリーンショットを撮影して保存する"""
+    try:
+        directory = os.path.dirname(filename)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        
+        driver.save_screenshot(filename)
+        print(f"スクリーンショットを保存しました: {filename}")
+        
+    except WebDriverException as e:
+        print(f"スクリーンショットの撮影中にWebDriverエラーが発生しました: {e}")
+    except FileNotFoundError:
+        print(f"指定されたパスが無効です: {filename}")
+    except PermissionError:
+        print(f"保存先にアクセス権がありません: {filename}")
+    except Exception as e:
+        print(f"予期しないエラーが発生しました: {e}")
+
+
+def main():
+    """
+    実践例: Google検索を自動化してスクリーンショットを保存
+    """
+    driver = webdriver.Chrome()
+    
+    try:
+        # タイムスタンプ付きのスクリーンショット保存用
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Googleを開く
+        driver.get("https://www.google.com")
+        print("Googleのページを開きました。")
+        time.sleep(2)
+        
+        # 初期画面のスクリーンショット
+        take_screenshot(driver, f"screenshots/01_google_home_{timestamp}.png")
+        
+        # 検索を実行
+        search_box_xpath = '//textarea[@name="q"]'
+        input_text_by_xpath(driver, search_box_xpath, "Python Selenium 自動化")
+        time.sleep(1)
+        
+        # 検索入力後のスクリーンショット
+        take_screenshot(driver, f"screenshots/02_search_input_{timestamp}.png")
+        
+        # Enterキーで検索実行
+        search_box = driver.find_element(By.XPATH, search_box_xpath)
+        search_box.send_keys(Keys.RETURN)
+        time.sleep(3)
+        
+        # 検索結果のスクリーンショット
+        take_screenshot(driver, f"screenshots/03_search_results_{timestamp}.png")
+        
+        print("すべての処理が正常に完了しました!")
+        
+    except Exception as e:
+        print(f"エラーが発生しました: {e}")
+        # エラー時もスクリーンショットを保存
+        take_screenshot(driver, f"screenshots/error_{timestamp}.png")
+    
+    finally:
+        time.sleep(2)
+        driver.quit()
+        print("ブラウザを閉じました。")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+## 応用テクニック
+
+### 1. 要素単位のスクリーンショット
+
+特定の要素だけをキャプチャする方法:
+
+```python
+def take_element_screenshot(driver, css_selector, filename="element.png"):
+    """特定の要素のスクリーンショットを撮影"""
+    try:
+        element = driver.find_element(By.CSS_SELECTOR, css_selector)
+        element.screenshot(filename)
+        print(f"要素のスクリーンショットを保存しました: {filename}")
+    except NoSuchElementException:
+        print(f"要素が見つかりませんでした: {css_selector}")
+    except Exception as e:
+        print(f"エラーが発生しました: {e}")
+```
+
+### 2. ページ全体のスクリーンショット
+
+```python
+def take_full_page_screenshot(driver, filename="fullpage.png"):
+    """ページ全体のスクリーンショットを撮影(Chrome限定)"""
+    try:
+        # ページの高さを取得
+        total_height = driver.execute_script("return document.body.scrollHeight")
+        driver.set_window_size(1920, total_height)
+        time.sleep(1)
+        
+        driver.save_screenshot(filename)
+        print(f"ページ全体のスクリーンショットを保存しました: {filename}")
+    except Exception as e:
+        print(f"エラーが発生しました: {e}")
+```
+
+## まとめ
+
+今回追加したスクリーンショット機能のポイント:
+
+- **自動ディレクトリ作成**: `os.makedirs()`で保存先を自動生成
+- **タイムスタンプ活用**: 同じファイル名の上書きを防止
+- **エラー時の記録**: デバッグに役立つエラー画面の保存
+- **要素単位のキャプチャ**: 必要な部分だけを効率的に保存
+
+これらの関数を組み合わせることで、強力なWeb自動化ツールが作成できます!
+
+**次回予告**: 待機処理とロギングについて解説予定です!
