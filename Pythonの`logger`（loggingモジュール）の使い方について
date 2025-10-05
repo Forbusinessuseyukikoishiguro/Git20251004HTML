@@ -1,0 +1,128 @@
+新人エンジニア向けに、Pythonの`logger`（loggingモジュール）の使い方について、**わかりやすく・すぐ使える形で**まとめますね！
+
+---
+
+## ✅ Python `logger`（loggingモジュール）とは？
+
+プログラムの中で何が起きているかを**ログとして記録する機能**です。
+開発中や実運用中に「どこで失敗した？」「何が動いた？」を確認するために使います。
+
+---
+
+## 🔰 基本の使い方（最低限これでOK）
+
+### ① 最初に設定（ファイルの最初に書く）
+
+```python
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,  # 出力レベル：DEBUG, INFO, WARNING, ERROR, CRITICAL
+    format='%(asctime)s [%(levelname)s] %(module)s (line:%(lineno)d) - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
+```
+
+### ② 実行中にログを出す
+
+```python
+logger.info("処理を開始します")
+# 何か処理
+logger.debug("デバッグ情報")
+logger.warning("注意点")
+logger.error("エラー発生！")
+logger.info("処理が終わりました")
+```
+
+---
+
+## 👀 出力例（ログの見え方）
+
+```text
+2025-10-05 15:30:10,123 [INFO] my_module (line:10) - 処理を開始します
+2025-10-05 15:30:10,456 [ERROR] my_module (line:25) - エラー発生！
+```
+
+---
+
+## 🛠 こんなときに使う！
+
+| 状況             | loggerの使い方                         |
+| -------------- | ---------------------------------- |
+| エラーの原因がわからない   | `logger.error("ここでエラーかも")` など入れて追跡 |
+| どこまで処理が進んだ？    | `logger.info("STEP1完了")` で進捗確認     |
+| デバッグ用に詳細情報出したい | `logger.debug("変数xの値: %s", x)`     |
+
+---
+
+## ✅ `print()`との違いは？
+
+| `print()`            | `logger`                    |
+| -------------------- | --------------------------- |
+| 簡単だけど本番環境では使わないことが多い | 本番でも使える、ログのレベル分けやファイル保存ができる |
+| 一時的に見るだけ             | 長期的にログを残せる                  |
+
+---
+
+## 💡応用：ログをファイルに保存したい場合
+
+```python
+logging.basicConfig(
+    filename='app.log',
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s'
+)
+```
+
+これでログが `app.log` に保存されます。
+
+---
+
+## 📌 ワンポイントアドバイス
+
+* `logger.info()` は「正常に進んでいるか」を見るのに便利
+* `logger.error()` はエラー発生箇所を知るのに使える
+* **printではなくloggerを使う癖をつけると、レベルアップできます！**
+
+---
+
+## 💬 例：エラーの原因を探すコード
+
+```python
+def read_file(file_path):
+    logger.info("ファイル読み込み開始: %s", file_path)
+    try:
+        with open(file_path, 'r') as f:
+            data = f.read()
+        logger.info("ファイル読み込み成功")
+        return data
+    except Exception as e:
+        logger.error("ファイル読み込み失敗: %s", e)
+        return None
+```
+
+---
+
+## 💬 参考：公式ドキュメント
+
+🔗 [https://docs.python.org/ja/3/library/logging.html](https://docs.python.org/ja/3/library/logging.html)
+
+---
+
+## 🎁 最後に：loggerのテンプレート（コピペOK）
+
+```python
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(module)s (line:%(lineno)d) - %(message)s'
+)
+logger = logging.getLogger(__name__)
+```
+
+---
+
+他に「こういうときどうする？」という具体的なケースがあれば、遠慮なく聞いてくださいね！
+次はGitの基本コマンドやトラブル解決についてまとめましょうか？
