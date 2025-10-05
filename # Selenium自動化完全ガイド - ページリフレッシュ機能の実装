@@ -1,0 +1,714 @@
+# Selenium自動化完全ガイド - ページリフレッシュ機能の実装
+
+ページの再読み込みは、動的コンテンツの更新確認やテストの初期化に欠かせない操作です。今回は、堅牢なエラーハンドリングを備えたページリフレッシュ機能を実装します。
+
+## 目次
+1. 基本的なページリフレッシュ関数
+2. ログ機能付き完全版
+3. リトライ機能付き高度な実装
+4. 実践的な使用例
+5. ページリフレッシュのベストプラクティス
+
+## 完全実装コード
+
+### selenium_refresh.py - ページリフレッシュ機能
+
+```python
+"""
+Selenium ページリフレッシュ機能
+例外処理、ログ、リトライ機能を完備
+"""
+
+import logging
+from typing import Optional, Literal
+from time import sleep
+from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.common.exceptions import (
+    WebDriverException,
+    TimeoutException,
+    NoSuchWindowException
+)
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+# ロガー設定
+logger = logging.getLogger(__name__)
+
+
+# ==================== ログ設定 ====================
+
+def setup_logging(
+    log_file: str = "logs/selenium_refresh.log",
+    level: int = logging.INFO
+) -> None:
+    """
+    ログ設定を初期化
+    
+    Args:
+        log_file: ログファイルのパス
+        level: ログレベル
+    """
+    import os
+    
+    log_dir = os.path.dirname(log_file)
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
+    
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s | %(levelname)-8s | [%(funcName)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        handlers=[
+            logging.FileHandler(log_file, encoding='utf-8'),
+            logging.StreamHandler()
+        ]
+    )
+
+
+# ==================== 基本的なリフレッシュ関数 ====================
+
+def refresh_page(driver: WebDriver) -> bool:
+    """
+    現在のページを更新する関数（基本版）
+    
+    Args:
+        driver: WebDriverオブジェクト
+    
+    Returns:
+        bool: 成功時True、失敗時False
+    
+    Raises:
+        WebDriverException: WebDriverの操作中に問題が発生した場合
+    """
+    try:
+        # ページのリフレッシュ操作
+        driver.refresh()
+        print("ページを更新しました。")
+        return True
+        
+    except WebDriverException as e:
+        print(f"エラー: ページの更新中にWebDriverエラーが発生しました。詳細: {str(e)}")
+        return False
+        
+    except Exception as e:
+        print(f"予期しないエラーが発生しました: {str(e)}")
+        return False
+
+
+# ==================== ログ機能付きリフレッシュ関数 ====================
+
+def refresh_page_with_logging(driver: WebDriver) -> bool:
+    """
+    現在のページを更新する関数（ログ機能付き）
+    
+    Args:
+        driver: WebDriverオブジェクト
+    
+    Returns:
+        bool: 成功時True、失敗時False
+    """
+    try:
+        logger.info("ページリフレッシュを開始します")
+        
+        # 現在のURLを記録
+        current_url = driver.current_url
+        logger.debug(f"現在のURL: {current_url}")
+        
+        # ページのリフレッシュ操作
+        driver.refresh()
+        
+        logger.info(f"✅ ページを正常に更新しました: {current_url}")
+        return True
+        
+    except NoSuchWindowException as e:
+        logger.error("❌ ウィンドウが存在しません（既に閉じられている可能性があります）")
+        logger.debug(f"エラー詳細: {str(e)}")
+        return False
+        
+    except WebDriverException as e:
+        logger.error(f"❌ ページの更新中にWebDriverエラーが発生しました")
+        logger.debug(f"エラー詳細: {str(e)}")
+        return False
+        
+    except Exception as e:
+        logger.error(f"❌ 予期しないエラーが発生しました: {str(e)}")
+        logger.exception("スタックトレース:")
+        return False
+
+
+# ==================== リトライ機能付きリフレッシュ関数 ====================
+
+def refresh_page_with_retry(
+    driver: WebDriver,
+    retries: int = 3,
+    delay: float = 1.0,
+    wait_after_refresh: float = 2.0
+) -> bool:
+    """
+    現在のページを更新する関数（リトライ機能付き）
+    
+    Args:
+        driver: WebDriverオブジェクト
+        retries: リトライ回数
+        delay: リトライ間の待機時間（秒）
+        wait_after_refresh: リフレッシュ後の待機時間（秒）
+    
+    Returns:
+        bool: 成功時True、失敗時False
+    """
+    logger.info(f"ページリフレッシュ開始 (最大試行回数: {retries})")
+    
+    for attempt in range(1, retries + 1):
+        try:
+            logger.debug(f"リフレッシュ試行 {attempt}/{retries}")
+            
+            # 現在のURLを記録
+            current_url = driver.current_url
+            logger.debug(f"現在のURL: {current_url}")
+            
+            # ページのリフレッシュ操作
+            driver.refresh()
+            
+            # リフレッシュ後の待機
+            if wait_after_refresh > 0:
+                logger.debug(f"{wait_after_refresh}秒待機中...")
+                sleep(wait_after_refresh)
+            
+            # ページが正常に読み込まれたか確認
+            try:
+                WebDriverWait(driver, 10).until(
+                    lambda d: d.execute_script('return document.readyState') == 'complete'
+                )
+                logger.debug("ページの読み込みが完了しました")
+            except TimeoutException:
+                logger.warning("ページ読み込みのタイムアウト（処理は継続）")
+            
+            logger.info(f"✅ ページを正常に更新しました (試行: {attempt}/{retries}): {current_url}")
+            return True
+            
+        except NoSuchWindowException as e:
+            logger.error(f"❌ ウィンドウが存在しません (試行 {attempt}/{retries})")
+            logger.debug(f"エラー詳細: {str(e)}")
+            
+            # ウィンドウが閉じられている場合は再試行しない
+            logger.error("ウィンドウエラーのため処理を中断します")
+            return False
+            
+        except WebDriverException as e:
+            logger.warning(f"⚠️ WebDriverエラーが発生 (試行 {attempt}/{retries})")
+            logger.debug(f"エラー詳細: {str(e)}")
+            
+            if attempt < retries:
+                logger.info(f"⏱️ {delay}秒後に再試行します...")
+                sleep(delay)
+            else:
+                logger.error("❌ リトライの上限に達しました")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ 予期しないエラーが発生しました: {str(e)}")
+            logger.exception("スタックトレース:")
+            
+            if attempt < retries:
+                logger.info(f"⏱️ {delay}秒後に再試行します...")
+                sleep(delay)
+            else:
+                logger.error("❌ リトライの上限に達しました")
+                return False
+    
+    return False
+
+
+# ==================== 条件付きリフレッシュ関数 ====================
+
+def refresh_if_stale(
+    driver: WebDriver,
+    timeout: float = 5.0,
+    retries: int = 3
+) -> bool:
+    """
+    ページが古くなっている（Stale）場合のみリフレッシュする関数
+    
+    Args:
+        driver: WebDriverオブジェクト
+        timeout: 要素チェックのタイムアウト時間（秒）
+        retries: リトライ回数
+    
+    Returns:
+        bool: リフレッシュした場合True、不要だった場合もTrue、失敗時False
+    """
+    try:
+        logger.info("ページの状態をチェック中...")
+        
+        # ページの読み込み状態を確認
+        ready_state = driver.execute_script('return document.readyState')
+        logger.debug(f"ページ状態: {ready_state}")
+        
+        if ready_state != 'complete':
+            logger.info("ページが完全に読み込まれていないため、リフレッシュします")
+            return refresh_page_with_retry(driver, retries=retries)
+        
+        logger.info("ページは正常な状態です（リフレッシュ不要）")
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ ページ状態のチェック中にエラーが発生: {str(e)}")
+        logger.info("エラーが発生したため、念のためリフレッシュします")
+        return refresh_page_with_retry(driver, retries=retries)
+
+
+# ==================== キャッシュクリア付きリフレッシュ ====================
+
+def hard_refresh(driver: WebDriver) -> bool:
+    """
+    キャッシュをクリアしてページをリフレッシュ（ハードリフレッシュ）
+    
+    Args:
+        driver: WebDriverオブジェクト
+    
+    Returns:
+        bool: 成功時True、失敗時False
+    """
+    try:
+        logger.info("ハードリフレッシュを実行します（キャッシュクリア）")
+        
+        current_url = driver.current_url
+        logger.debug(f"現在のURL: {current_url}")
+        
+        # JavaScriptでキャッシュをクリアしてリロード
+        driver.execute_script("location.reload(true);")
+        
+        # ページ読み込み待機
+        sleep(2)
+        
+        try:
+            WebDriverWait(driver, 10).until(
+                lambda d: d.execute_script('return document.readyState') == 'complete'
+            )
+        except TimeoutException:
+            logger.warning("ページ読み込みのタイムアウト")
+        
+        logger.info(f"✅ ハードリフレッシュ完了: {current_url}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ ハードリフレッシュ中にエラーが発生: {str(e)}")
+        logger.exception("スタックトレース:")
+        return False
+
+
+# ==================== テスト用HTML作成 ====================
+
+def create_refresh_test_html() -> str:
+    """リフレッシュテスト用のHTMLを作成"""
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ページリフレッシュテスト</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin: 0;
+                padding: 20px;
+            }
+            
+            .container {
+                background: white;
+                padding: 40px;
+                border-radius: 15px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                max-width: 600px;
+                width: 100%;
+            }
+            
+            h1 {
+                color: #667eea;
+                margin-bottom: 20px;
+                text-align: center;
+            }
+            
+            .info-box {
+                background: #f8f9fa;
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+                border-left: 4px solid #667eea;
+            }
+            
+            .info-item {
+                margin: 10px 0;
+                display: flex;
+                justify-content: space-between;
+            }
+            
+            .label {
+                font-weight: bold;
+                color: #333;
+            }
+            
+            .value {
+                color: #667eea;
+                font-family: monospace;
+            }
+            
+            button {
+                width: 100%;
+                padding: 15px;
+                margin: 10px 0;
+                border: none;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            
+            .btn-refresh {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+            
+            .btn-refresh:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            }
+            
+            .counter {
+                font-size: 48px;
+                text-align: center;
+                color: #667eea;
+                margin: 30px 0;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🔄 ページリフレッシュテスト</h1>
+            
+            <div class="info-box">
+                <div class="info-item">
+                    <span class="label">ページ読み込み回数:</span>
+                    <span class="value" id="load-count">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">最終読み込み時刻:</span>
+                    <span class="value" id="load-time">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">セッションID:</span>
+                    <span class="value" id="session-id">-</span>
+                </div>
+            </div>
+            
+            <div class="counter" id="counter">0</div>
+            
+            <button class="btn-refresh" onclick="manualRefresh()">
+                手動リフレッシュ
+            </button>
+        </div>
+        
+        <script>
+            // ページ読み込みカウンターをlocalStorageで管理
+            let loadCount = parseInt(localStorage.getItem('loadCount') || '0') + 1;
+            localStorage.setItem('loadCount', loadCount.toString());
+            
+            // セッションIDを生成（初回のみ）
+            if (!sessionStorage.getItem('sessionId')) {
+                sessionStorage.setItem('sessionId', 
+                    Math.random().toString(36).substring(2, 15));
+            }
+            
+            // 情報を表示
+            document.getElementById('load-count').textContent = loadCount;
+            document.getElementById('load-time').textContent = 
+                new Date().toLocaleTimeString('ja-JP');
+            document.getElementById('session-id').textContent = 
+                sessionStorage.getItem('sessionId');
+            
+            // カウンターの更新
+            let counter = 0;
+            setInterval(() => {
+                counter++;
+                document.getElementById('counter').textContent = counter;
+            }, 1000);
+            
+            // 手動リフレッシュ
+            function manualRefresh() {
+                location.reload();
+            }
+            
+            // ページロード完了をコンソールに出力
+            window.addEventListener('load', () => {
+                console.log('ページが読み込まれました:', {
+                    loadCount: loadCount,
+                    time: new Date().toISOString(),
+                    sessionId: sessionStorage.getItem('sessionId')
+                });
+            });
+        </script>
+    </body>
+    </html>
+    """
+    
+    import os
+    filepath = os.path.abspath("selenium_refresh_test.html")
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(html_content)
+    
+    return filepath
+
+
+# ==================== スクリーンショット機能 ====================
+
+def capture_screenshot(driver: WebDriver, filename: str, description: str = "") -> bool:
+    """スクリーンショットを撮影"""
+    try:
+        import os
+        directory = os.path.dirname(filename)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        
+        driver.save_screenshot(filename)
+        
+        if description:
+            logger.info(f"📸 スクリーンショット保存: {filename} | {description}")
+        else:
+            logger.info(f"📸 スクリーンショット保存: {filename}")
+        
+        return True
+    except Exception as e:
+        logger.error(f"❌ スクリーンショット撮影失敗: {str(e)}")
+        return False
+
+
+# ==================== メイン実行関数 ====================
+
+def main():
+    """メイン実行関数"""
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    
+    # ログ設定
+    setup_logging(level=logging.INFO)
+    
+    logger.info("="*80)
+    logger.info("ページリフレッシュ機能テスト開始")
+    logger.info("="*80)
+    
+    # テストHTML作成
+    html_path = create_refresh_test_html()
+    logger.info(f"テストHTMLを作成: {html_path}")
+    
+    # WebDriverオプション
+    options = Options()
+    options.add_argument('--start-maximized')
+    
+    # WebDriver起動
+    logger.info("WebDriverを起動中...")
+    driver = webdriver.Chrome(options=options)
+    
+    try:
+        # ===== TEST 1: 基本的なリフレッシュ =====
+        logger.info("\n" + "="*80)
+        logger.info("TEST 1: 基本的なページリフレッシュ")
+        logger.info("="*80)
+        
+        driver.get(f"file:///{html_path}")
+        sleep(3)
+        
+        capture_screenshot(
+            driver,
+            "screenshots/refresh_01_initial.png",
+            "初期状態"
+        )
+        
+        # 基本的なリフレッシュ
+        refresh_page(driver)
+        sleep(2)
+        
+        capture_screenshot(
+            driver,
+            "screenshots/refresh_02_after_basic.png",
+            "基本リフレッシュ後"
+        )
+        
+        logger.info("✅ TEST 1 完了\n")
+        
+        # ===== TEST 2: ログ機能付きリフレッシュ =====
+        logger.info("="*80)
+        logger.info("TEST 2: ログ機能付きリフレッシュ")
+        logger.info("="*80)
+        
+        sleep(3)
+        refresh_page_with_logging(driver)
+        sleep(2)
+        
+        capture_screenshot(
+            driver,
+            "screenshots/refresh_03_with_logging.png",
+            "ログ付きリフレッシュ後"
+        )
+        
+        logger.info("✅ TEST 2 完了\n")
+        
+        # ===== TEST 3: リトライ機能付きリフレッシュ =====
+        logger.info("="*80)
+        logger.info("TEST 3: リトライ機能付きリフレッシュ")
+        logger.info("="*80)
+        
+        sleep(3)
+        refresh_page_with_retry(
+            driver,
+            retries=3,
+            delay=1.0,
+            wait_after_refresh=2.0
+        )
+        
+        capture_screenshot(
+            driver,
+            "screenshots/refresh_04_with_retry.png",
+            "リトライ機能付きリフレッシュ後"
+        )
+        
+        logger.info("✅ TEST 3 完了\n")
+        
+        # ===== TEST 4: 条件付きリフレッシュ =====
+        logger.info("="*80)
+        logger.info("TEST 4: 条件付きリフレッシュ（ページ状態チェック）")
+        logger.info("="*80)
+        
+        sleep(3)
+        refresh_if_stale(driver, timeout=5.0, retries=3)
+        
+        capture_screenshot(
+            driver,
+            "screenshots/refresh_05_conditional.png",
+            "条件付きリフレッシュ後"
+        )
+        
+        logger.info("✅ TEST 4 完了\n")
+        
+        # ===== TEST 5: ハードリフレッシュ =====
+        logger.info("="*80)
+        logger.info("TEST 5: ハードリフレッシュ（キャッシュクリア）")
+        logger.info("="*80)
+        
+        sleep(3)
+        hard_refresh(driver)
+        sleep(2)
+        
+        capture_screenshot(
+            driver,
+            "screenshots/refresh_06_hard_refresh.png",
+            "ハードリフレッシュ後"
+        )
+        
+        logger.info("✅ TEST 5 完了\n")
+        
+        # ===== TEST 6: 連続リフレッシュ =====
+        logger.info("="*80)
+        logger.info("TEST 6: 連続リフレッシュテスト（3回）")
+        logger.info("="*80)
+        
+        for i in range(1, 4):
+            logger.info(f"\n連続リフレッシュ {i}/3")
+            sleep(2)
+            refresh_page_with_retry(driver, retries=2, wait_after_refresh=1.5)
+            
+            capture_screenshot(
+                driver,
+                f"screenshots/refresh_07_continuous_{i}.png",
+                f"連続リフレッシュ {i}回目"
+            )
+        
+        logger.info("✅ TEST 6 完了\n")
+        
+        # 最終スクリーンショット
+        sleep(2)
+        capture_screenshot(
+            driver,
+            "screenshots/refresh_99_final.png",
+            "最終状態"
+        )
+        
+        # テスト結果サマリー
+        logger.info("\n" + "="*80)
+        logger.info("🎉 全テスト完了!")
+        logger.info("="*80)
+        logger.info("実行されたテスト:")
+        logger.info("  ✅ TEST 1: 基本的なページリフレッシュ")
+        logger.info("  ✅ TEST 2: ログ機能付きリフレッシュ")
+        logger.info("  ✅ TEST 3: リトライ機能付きリフレッシュ")
+        logger.info("  ✅ TEST 4: 条件付きリフレッシュ")
+        logger.info("  ✅ TEST 5: ハードリフレッシュ（キャッシュクリア）")
+        logger.info("  ✅ TEST 6: 連続リフレッシュテスト")
+        logger.info("="*80)
+        
+    except Exception as e:
+        logger.error(f"\n❌ 致命的なエラーが発生: {str(e)}")
+        logger.exception("スタックトレース:")
+        
+        try:
+            capture_screenshot(
+                driver,
+                "screenshots/refresh_error.png",
+                "エラー発生時"
+            )
+        except:
+            logger.error("エラー時のスクリーンショット撮影も失敗")
+    
+    finally:
+        logger.info("\n" + "="*80)
+        logger.info("クリーンアップ処理中...")
+        logger.info("="*80)
+        
+        sleep(2)
+        driver.quit()
+        
+        logger.info("✅ WebDriverを終了しました")
+        logger.info("="*80)
+        logger.info("ページリフレッシュ機能テスト終了")
+        logger.info("="*80)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+## 実行方法
+
+```bash
+# 必要なパッケージのインストール
+pip install selenium
+
+# スクリプトの実行
+python selenium_refresh.py
+```
+
+## まとめ
+
+### 実装した機能
+
+1. **基本的なリフレッシュ** - シンプルなページ再読み込み
+2. **ログ機能付き** - 詳細な操作ログを記録
+3. **リトライ機能** - 失敗時の自動再試行
+4. **条件付きリフレッシュ** - ページ状態に応じた再読み込み
+5. **ハードリフレッシュ** - キャッシュクリア付き再読み込み
+
+### ベストプラクティス
+
+- リフレッシュ後は必ず適切な待機時間を設ける
+- ページ読み込み状態を確認してから次の操作へ
+- エラー発生時はログとスクリーンショットで状況を記録
+- リトライ回数と待機時間は用途に応じて調整
+
+これで、あらゆる状況に対応できる堅牢なページリフレッシュ機能が実装できました!
