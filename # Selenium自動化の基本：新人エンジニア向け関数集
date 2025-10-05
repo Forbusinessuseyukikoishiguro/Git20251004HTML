@@ -1,0 +1,256 @@
+# Selenium自動化の基本：新人エンジニア向け関数集
+
+## はじめに
+
+Webブラウザの自動操作を実現するSeleniumは、テスト自動化やスクレイピングなどで広く使われています。本記事では、実務で即使える基本的なSelenium関数を、エラーハンドリングやベストプラクティスと共に紹介します。
+
+## 環境構築
+
+```bash
+pip install selenium webdriver-manager
+```
+
+## 基本的なセットアップ
+
+```python
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+def setup_driver():
+    """WebDriverを初期化"""
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service)
+    return driver
+```
+
+## 1. URLを開く
+
+```python
+from selenium.common.exceptions import WebDriverException
+from urllib.parse import urlparse
+
+def open_url(driver, url, timeout=10):
+    """
+    指定したURLを開く（エラーハンドリング付き）
+    
+    Args:
+        driver: WebDriverオブジェクト
+        url: 開くURL
+        timeout: タイムアウト時間（秒）
+    """
+    # URLの検証
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        raise ValueError(f"無効なURL: {url}")
+    
+    try:
+        driver.get(url)
+        print(f"URLを開きました: {url}")
+        return True
+    except WebDriverException as e:
+        print(f"エラー: {e}")
+        return False
+```
+
+## 2. 要素をクリック
+
+```python
+from selenium.common.exceptions import (
+    TimeoutException,
+    ElementNotInteractableException
+)
+import time
+
+def click_element_by_css(driver, css_selector, timeout=10, retries=3):
+    """
+    CSSセレクタで要素をクリック（リトライ機能付き）
+    
+    Args:
+        css_selector: 対象要素のCSSセレクタ
+        timeout: 待機時間
+        retries: 再試行回数
+    """
+    for attempt in range(1, retries + 1):
+        try:
+            element = WebDriverWait(driver, timeout).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, css_selector))
+            )
+            element.click()
+            print(f"要素をクリックしました: {css_selector}")
+            return True
+        except (TimeoutException, ElementNotInteractableException) as e:
+            if attempt < retries:
+                print(f"試行 {attempt} 失敗。2秒後に再試行...")
+                time.sleep(2)
+            else:
+                print(f"クリック失敗: {e}")
+                return False
+```
+
+## 3. テキストを入力
+
+```python
+def input_text_by_css(driver, css_selector, text, timeout=10):
+    """
+    フォームにテキストを入力
+    
+    Args:
+        css_selector: 入力フォームのCSSセレクタ
+        text: 入力するテキスト
+    """
+    try:
+        element = WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, css_selector))
+        )
+        element.clear()  # 既存のテキストをクリア
+        element.send_keys(text)
+        print(f"テキストを入力: {text}")
+        return True
+    except Exception as e:
+        print(f"入力エラー: {e}")
+        return False
+```
+
+## 4. スクリーンショット撮影
+
+```python
+import os
+from datetime import datetime
+
+def take_screenshot(driver, filename=None, directory="screenshots"):
+    """
+    スクリーンショットを撮影
+    
+    Args:
+        filename: ファイル名（省略時は自動生成）
+        directory: 保存先ディレクトリ
+    """
+    # ディレクトリ作成
+    os.makedirs(directory, exist_ok=True)
+    
+    # ファイル名生成
+    if filename is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"screenshot_{timestamp}.png"
+    
+    filepath = os.path.join(directory, filename)
+    driver.save_screenshot(filepath)
+    print(f"スクリーンショット保存: {filepath}")
+    return filepath
+```
+
+## 5. エラー時の自動スクリーンショット
+
+```python
+def safe_operation(driver, operation, *args, **kwargs):
+    """
+    エラー時に自動でスクリーンショットを撮る汎用関数
+    
+    Args:
+        operation: 実行する関数
+        *args, **kwargs: 関数に渡す引数
+    """
+    try:
+        return operation(*args, **kwargs)
+    except Exception as e:
+        print(f"エラー発生: {e}")
+        take_screenshot(driver, prefix="error")
+        raise
+```
+
+## 実践例：Google検索
+
+```python
+def google_search(query):
+    """Google検索の自動化"""
+    driver = setup_driver()
+    
+    try:
+        # Googleを開く
+        open_url(driver, "https://www.google.com")
+        
+        # 検索ボックスに入力
+        input_text_by_css(driver, "input[name='q']", query)
+        
+        # 検索ボタンをクリック
+        click_element_by_css(driver, "input[name='btnK']")
+        
+        # 結果が表示されるまで待機
+        time.sleep(2)
+        
+        # スクリーンショット撮影
+        take_screenshot(driver, f"search_{query}.png")
+        
+    except Exception as e:
+        print(f"検索失敗: {e}")
+        take_screenshot(driver, "error_google_search.png")
+    finally:
+        driver.quit()
+
+# 実行
+if __name__ == "__main__":
+    google_search("Python Selenium")
+```
+
+## ベストプラクティス
+
+### 1. 明示的な待機を使う
+
+```python
+# ❌ 悪い例
+time.sleep(5)
+
+# ✅ 良い例
+WebDriverWait(driver, 10).until(
+    EC.presence_of_element_located((By.ID, "myElement"))
+)
+```
+
+### 2. 例外処理を必ず入れる
+
+```python
+try:
+    element = driver.find_element(By.ID, "button")
+    element.click()
+except NoSuchElementException:
+    print("要素が見つかりません")
+    take_screenshot(driver, "error.png")
+```
+
+### 3. リソースを確実に解放
+
+```python
+driver = setup_driver()
+try:
+    # 処理
+    pass
+finally:
+    driver.quit()  # 必ず実行される
+```
+
+## よくあるエラーと対処法
+
+| エラー | 原因 | 対処法 |
+|--------|------|--------|
+| `NoSuchElementException` | 要素が見つからない | XPath/CSSセレクタを確認、待機時間を追加 |
+| `TimeoutException` | 待機時間超過 | `timeout`の値を増やす |
+| `ElementNotInteractableException` | 要素が操作不可 | 要素が表示されるまで待機 |
+| `StaleElementReferenceException` | 要素が無効化 | 要素を再取得 |
+
+## まとめ
+
+- **エラーハンドリング**は必須
+- **明示的な待機**で安定性向上
+- **スクリーンショット**でデバッグ効率化
+- **リトライ機能**で一時的なエラーに対応
+
+これらの基本関数をベースに、プロジェクトに合わせてカスタマイズしていきましょう。
+
+## 参考リンク
+
+- [Selenium公式ドキュメント](https://www.selenium.dev/documentation/)
+- [webdriver-manager](https://github.com/SergeyPirogov/webdriver_manager)
