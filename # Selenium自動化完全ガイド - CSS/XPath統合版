@@ -1,0 +1,455 @@
+# Selenium自動化完全ガイド - CSS/XPath統合版
+
+今回は、これまでの関数を統合し、CSSセレクタとXPath両方のクリック機能を完全版としてまとめます!
+
+## 完全版: すべての基本操作関数
+
+```python
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    ElementNotInteractableException,
+    WebDriverException
+)
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import os
+import time
+from datetime import datetime
+
+
+# ==================== クリック操作 ====================
+
+def click_element_by_css(driver, css_selector):
+    """
+    CSSセレクタを指定して要素をクリックする関数。
+
+    Args:
+        driver (WebDriver): WebDriverオブジェクト。
+        css_selector (str): クリック対象の要素のCSSセレクタ。
+    """
+    try:
+        # CSSセレクタで要素を検索
+        element = driver.find_element(By.CSS_SELECTOR, css_selector)
+        
+        # 要素をクリック
+        element.click()
+        print(f"CSSセレクタ '{css_selector}' の要素をクリックしました。")
+        
+    except NoSuchElementException:
+        print(f"CSSセレクタ '{css_selector}' の要素が見つかりませんでした。")
+    except ElementNotInteractableException:
+        print(f"CSSセレクタ '{css_selector}' の要素は操作できません（非表示、または無効）。")
+    except WebDriverException as e:
+        print(f"WebDriverエラーが発生しました: {e}")
+    except Exception as e:
+        print(f"予期しないエラーが発生しました: {e}")
+
+
+def click_element_by_xpath(driver, xpath):
+    """
+    XPathを指定して要素をクリックする関数。
+    
+    Args:
+        driver (WebDriver): WebDriverオブジェクト。
+        xpath (str): クリック対象の要素のXPath。
+    """
+    try:
+        element = driver.find_element(By.XPATH, xpath)
+        element.click()
+        print(f"XPath '{xpath}' の要素をクリックしました。")
+        
+    except NoSuchElementException:
+        print(f"XPath '{xpath}' の要素が見つかりませんでした。")
+    except ElementNotInteractableException:
+        print(f"XPath '{xpath}' の要素は操作できません（非表示、または無効）。")
+    except WebDriverException as e:
+        print(f"WebDriverエラーが発生しました: {e}")
+    except Exception as e:
+        print(f"予期しないエラーが発生しました: {e}")
+
+
+# ==================== 入力操作 ====================
+
+def input_text_by_xpath(driver, xpath, text):
+    """XPathを指定してフォームにテキストを入力する"""
+    try:
+        form = driver.find_element(By.XPATH, xpath)
+        form.clear()
+        form.send_keys(text)
+        print(f"XPath '{xpath}' に '{text}' を入力しました。")
+    except NoSuchElementException:
+        print(f"エラー: XPath '{xpath}' が見つかりませんでした。")
+    except WebDriverException as e:
+        print(f"入力時にエラーが発生しました: {e}")
+
+
+def input_text_by_css(driver, css_selector, text):
+    """CSSセレクタを指定してフォームにテキストを入力する"""
+    try:
+        form = driver.find_element(By.CSS_SELECTOR, css_selector)
+        form.clear()
+        form.send_keys(text)
+        print(f"CSSセレクタ '{css_selector}' に '{text}' を入力しました。")
+    except NoSuchElementException:
+        print(f"エラー: CSSセレクタ '{css_selector}' が見つかりませんでした。")
+    except WebDriverException as e:
+        print(f"入力時にエラーが発生しました: {e}")
+
+
+# ==================== チェックボックス操作 ====================
+
+def check_checkbox_by_css(driver, css_selector):
+    """CSSセレクタを指定してチェックボックスを選択する"""
+    try:
+        checkbox = driver.find_element(By.CSS_SELECTOR, css_selector)
+        if not checkbox.is_selected():
+            checkbox.click()
+            print(f"CSSセレクタ '{css_selector}' のチェックボックスを選択しました。")
+        else:
+            print(f"CSSセレクタ '{css_selector}' のチェックボックスは既に選択されています。")
+    except NoSuchElementException:
+        print(f"エラー: CSSセレクタ '{css_selector}' が見つかりませんでした。")
+    except WebDriverException as e:
+        print(f"チェックボックス操作時にエラーが発生しました: {e}")
+
+
+# ==================== 検索・遷移操作 ====================
+
+def search_and_navigate(driver, search_box_xpath, query, submit_button_xpath=None):
+    """検索ボックスに文字を入力し、画面遷移する"""
+    try:
+        search_box = driver.find_element(By.XPATH, search_box_xpath)
+        search_box.clear()
+        search_box.send_keys(query)
+        print(f"検索ボックスに '{query}' を入力しました。")
+        
+        if submit_button_xpath:
+            try:
+                submit_button = driver.find_element(By.XPATH, submit_button_xpath)
+                submit_button.click()
+                print("送信ボタンをクリックしました。")
+            except NoSuchElementException:
+                print(f"送信ボタンのXPath '{submit_button_xpath}' が見つかりませんでした。")
+                search_box.send_keys(Keys.RETURN)
+                print("Enterキーで検索を実行しました。")
+        else:
+            search_box.send_keys(Keys.RETURN)
+            print("Enterキーを押して検索を実行しました。")
+            
+    except NoSuchElementException:
+        print(f"検索ボックスのXPath '{search_box_xpath}' が見つかりませんでした。")
+    except WebDriverException as e:
+        print(f"WebDriverのエラーが発生しました: {e}")
+    except Exception as e:
+        print(f"予期しないエラーが発生しました: {e}")
+
+
+# ==================== スクリーンショット操作 ====================
+
+def take_screenshot(driver, filename="screenshot.png"):
+    """スクリーンショットを撮影して保存する"""
+    try:
+        directory = os.path.dirname(filename)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        
+        driver.save_screenshot(filename)
+        print(f"スクリーンショットを保存しました: {filename}")
+        
+    except WebDriverException as e:
+        print(f"スクリーンショットの撮影中にWebDriverエラーが発生しました: {e}")
+    except FileNotFoundError:
+        print(f"指定されたパスが無効です: {filename}")
+    except PermissionError:
+        print(f"保存先にアクセス権がありません: {filename}")
+    except Exception as e:
+        print(f"予期しないエラーが発生しました: {e}")
+
+
+# ==================== 待機機能付きクリック ====================
+
+def click_with_wait(driver, selector, by_type="css", timeout=10):
+    """
+    明示的待機を使った安全なクリック
+    
+    Args:
+        driver: WebDriverオブジェクト
+        selector: CSSセレクタまたはXPath
+        by_type: "css" または "xpath"
+        timeout: 待機時間(秒)
+    """
+    try:
+        by = By.CSS_SELECTOR if by_type == "css" else By.XPATH
+        element = WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((by, selector))
+        )
+        element.click()
+        print(f"{by_type.upper()}セレクタ '{selector}' の要素をクリックしました。")
+        return True
+    except Exception as e:
+        print(f"クリックに失敗しました: {e}")
+        return False
+
+
+# ==================== 実践例 ====================
+
+def create_test_html():
+    """テスト用のHTMLファイルを作成"""
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <title>Selenium完全テスト</title>
+        <style>
+            body { 
+                font-family: 'Segoe UI', sans-serif; 
+                padding: 40px; 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+            .container {
+                background: white;
+                color: #333;
+                padding: 30px;
+                border-radius: 10px;
+                max-width: 600px;
+                margin: 0 auto;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            }
+            button { 
+                padding: 12px 24px; 
+                margin: 10px 5px; 
+                font-size: 16px; 
+                cursor: pointer; 
+                border: none;
+                border-radius: 5px;
+                background: #667eea;
+                color: white;
+                transition: all 0.3s;
+            }
+            button:hover { 
+                background: #5568d3;
+                transform: translateY(-2px);
+            }
+            button:disabled {
+                background: #ccc;
+                cursor: not-allowed;
+            }
+            .hidden { display: none; }
+            input[type="text"], input[type="checkbox"] {
+                margin: 10px 5px;
+                padding: 8px;
+            }
+            #result { 
+                margin-top: 20px; 
+                padding: 15px; 
+                background: #f0f9ff; 
+                border-radius: 5px;
+                border-left: 4px solid #667eea;
+                min-height: 50px;
+            }
+            h1 { color: #667eea; }
+            label { margin: 10px; display: inline-block; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚀 Selenium自動化テスト</h1>
+            
+            <h3>クリックテスト</h3>
+            <button id="button1" onclick="showMessage('ボタン1がクリックされました！')">
+                ボタン1 (ID指定)
+            </button>
+            <button class="test-button" onclick="showMessage('ボタン2がクリックされました！')">
+                ボタン2 (Class指定)
+            </button>
+            <button id="button3" disabled>無効なボタン</button>
+            
+            <h3>入力テスト</h3>
+            <input type="text" id="input1" placeholder="ここに入力...">
+            <input type="text" class="input-field" placeholder="CSSで入力...">
+            
+            <h3>チェックボックステスト</h3>
+            <label>
+                <input type="checkbox" id="check1" onclick="showMessage('チェックボックス1')">
+                オプション1
+            </label>
+            <label>
+                <input type="checkbox" class="checkbox-item" onclick="showMessage('チェックボックス2')">
+                オプション2
+            </label>
+            
+            <div id="result"></div>
+        </div>
+        
+        <script>
+            function showMessage(msg) {
+                const result = document.getElementById('result');
+                result.innerHTML = `
+                    <strong>✅ ${msg}</strong><br>
+                    <small>実行時刻: ${new Date().toLocaleTimeString('ja-JP')}</small>
+                `;
+            }
+        </script>
+    </body>
+    </html>
+    """
+    
+    with open("selenium_complete_test.html", "w", encoding="utf-8") as f:
+        f.write(html_content)
+    
+    return os.path.abspath("selenium_complete_test.html")
+
+
+def main():
+    """全機能を使った総合テスト"""
+    
+    # テストHTMLを作成
+    html_path = create_test_html()
+    print(f"テストHTMLを作成しました: {html_path}")
+    
+    # WebDriver起動
+    driver = webdriver.Chrome()
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    try:
+        # HTMLファイルを開く
+        driver.get(f"file:///{html_path}")
+        print("\n🌐 テストページを開きました。")
+        time.sleep(2)
+        
+        # 初期画面のスクリーンショット
+        take_screenshot(driver, f"screenshots/00_initial_{timestamp}.png")
+        
+        # ===== クリックテスト =====
+        print("\n" + "="*50)
+        print("📌 クリックテスト開始")
+        print("="*50)
+        
+        # CSS指定でクリック
+        click_element_by_css(driver, "#button1")
+        time.sleep(1)
+        take_screenshot(driver, f"screenshots/01_button1_clicked_{timestamp}.png")
+        
+        # XPath指定でクリック
+        click_element_by_xpath(driver, '//button[@class="test-button"]')
+        time.sleep(1)
+        take_screenshot(driver, f"screenshots/02_button2_clicked_{timestamp}.png")
+        
+        # 無効なボタン(エラー例)
+        click_element_by_css(driver, "#button3")
+        time.sleep(1)
+        
+        # ===== 入力テスト =====
+        print("\n" + "="*50)
+        print("📝 入力テスト開始")
+        print("="*50)
+        
+        input_text_by_xpath(driver, '//input[@id="input1"]', "XPathで入力したテキスト")
+        time.sleep(1)
+        
+        input_text_by_css(driver, ".input-field", "CSSで入力したテキスト")
+        time.sleep(1)
+        take_screenshot(driver, f"screenshots/03_inputs_{timestamp}.png")
+        
+        # ===== チェックボックステスト =====
+        print("\n" + "="*50)
+        print("☑️  チェックボックステスト開始")
+        print("="*50)
+        
+        check_checkbox_by_css(driver, "#check1")
+        time.sleep(1)
+        
+        check_checkbox_by_css(driver, ".checkbox-item")
+        time.sleep(1)
+        take_screenshot(driver, f"screenshots/04_checkboxes_{timestamp}.png")
+        
+        # ===== 待機機能テスト =====
+        print("\n" + "="*50)
+        print("⏱️  待機機能テスト")
+        print("="*50)
+        
+        click_with_wait(driver, "#button1", by_type="css", timeout=5)
+        time.sleep(1)
+        
+        print("\n✅ 全てのテストが完了しました！")
+        
+    except Exception as e:
+        print(f"\n❌ エラーが発生しました: {e}")
+        take_screenshot(driver, f"screenshots/error_{timestamp}.png")
+    
+    finally:
+        time.sleep(3)
+        driver.quit()
+        print("\n🔚 ブラウザを閉じました。")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+## 実行結果の例
+
+```
+テストHTMLを作成しました: /path/to/selenium_complete_test.html
+
+🌐 テストページを開きました。
+スクリーンショットを保存しました: screenshots/00_initial_20250105_143022.png
+
+==================================================
+📌 クリックテスト開始
+==================================================
+CSSセレクタ '#button1' の要素をクリックしました。
+スクリーンショットを保存しました: screenshots/01_button1_clicked_20250105_143022.png
+XPath '//button[@class="test-button"]' の要素をクリックしました。
+スクリーンショットを保存しました: screenshots/02_button2_clicked_20250105_143022.png
+CSSセレクタ '#button3' の要素は操作できません（非表示、または無効）。
+
+==================================================
+📝 入力テスト開始
+==================================================
+XPath '//input[@id="input1"]' に 'XPathで入力したテキスト' を入力しました。
+CSSセレクタ '.input-field' に 'CSSで入力したテキスト' を入力しました。
+スクリーンショットを保存しました: screenshots/03_inputs_20250105_143022.png
+
+==================================================
+☑️ チェックボックステスト開始
+==================================================
+CSSセレクタ '#check1' のチェックボックスを選択しました。
+CSSセレクタ '.checkbox-item' のチェックボックスを選択しました。
+スクリーンショットを保存しました: screenshots/04_checkboxes_20250105_143022.png
+
+==================================================
+⏱️ 待機機能テスト
+==================================================
+CSSセレクタ '#button1' の要素をクリックしました。
+
+✅ 全てのテストが完了しました！
+
+🔚 ブラウザを閉じました。
+```
+
+## まとめ
+
+この完全版では、以下の機能を網羅しています:
+
+### 実装済み機能
+- ✅ **CSSセレクタでクリック** (`click_element_by_css`)
+- ✅ **XPathでクリック** (`click_element_by_xpath`)
+- ✅ **XPath/CSSで入力** (`input_text_by_xpath`, `input_text_by_css`)
+- ✅ **チェックボックス操作** (`check_checkbox_by_css`)
+- ✅ **検索・画面遷移** (`search_and_navigate`)
+- ✅ **スクリーンショット** (`take_screenshot`)
+- ✅ **待機機能付きクリック** (`click_with_wait`)
+
+### 例外処理
+- `NoSuchElementException` - 要素が見つからない
+- `ElementNotInteractableException` - 要素が操作できない
+- `WebDriverException` - WebDriver関連エラー
+- 汎用例外処理
+
+これで、Selenium自動化の基本操作はすべて揃いました! 🎉
