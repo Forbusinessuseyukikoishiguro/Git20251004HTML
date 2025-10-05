@@ -1,0 +1,358 @@
+# 📋 Git コマンド一覧表
+
+**カテゴリ別・使用頻度順に整理**
+
+---
+
+## 🔰 初心者が最初に覚えるべき必須コマンド
+
+| コマンド | 説明 | 使用頻度 |
+|---------|------|---------|
+| `git status` | 現在の状態を確認 | ★★★★★ |
+| `git add .` | 全ファイルをステージング | ★★★★★ |
+| `git commit -m "メッセージ"` | コミット作成 | ★★★★★ |
+| `git push origin ブランチ名` | リモートにプッシュ | ★★★★★ |
+| `git pull origin main` | 最新を取得 | ★★★★★ |
+| `git switch -c feature/xxx` | ブランチ作成＋移動 | ★★★★☆ |
+| `git switch main` | ブランチ移動 | ★★★★☆ |
+| `git log --oneline` | 履歴を簡潔表示 | ★★★☆☆ |
+| `git diff` | 差分確認 | ★★★☆☆ |
+| `git stash` | 一時保存 | ★★☆☆☆ |
+
+---
+
+## 📦 初期設定（最初の1回のみ）
+
+```bash
+# ユーザー名設定
+git config --global user.name "田中太郎"
+
+# メールアドレス設定
+git config --global user.email "tanaka@example.com"
+
+# エディタ設定（VSCode）
+git config --global core.editor "code --wait"
+
+# 設定確認
+git config --global --list
+```
+
+---
+
+## 📁 リポジトリの作成・取得
+
+| コマンド | 説明 | 使用場面 |
+|---------|------|---------|
+| `git init` | 新しいリポジトリを作成 | ローカルで新規プロジェクト開始 |
+| `git clone <URL>` | 既存リポジトリを取得 | GitHubからプロジェクトを取得 |
+
+```bash
+# 例：GitHubからクローン
+git clone https://github.com/username/project.git
+cd project
+```
+
+---
+
+## 📝 変更の記録（add → commit → push）
+
+### ステージング（add）
+
+| コマンド | 説明 |
+|---------|------|
+| `git add .` | 全ファイルをステージング |
+| `git add <ファイル名>` | 特定ファイルのみステージング |
+| `git add src/` | 特定ディレクトリをステージング |
+| `git add -p` | 対話的にステージング（部分的に選択） |
+
+### コミット（commit）
+
+| コマンド | 説明 |
+|---------|------|
+| `git commit -m "メッセージ"` | コミット作成 |
+| `git commit -am "メッセージ"` | add + commit 同時実行 |
+| `git commit --amend -m "新メッセージ"` | 直前のコミットメッセージ修正 |
+| `git commit --amend --no-edit` | 直前のコミットに追加（メッセージそのまま） |
+
+### プッシュ（push）
+
+| コマンド | 説明 |
+|---------|------|
+| `git push origin main` | mainブランチにプッシュ |
+| `git push -u origin feature/xxx` | 初回プッシュ（上流ブランチ設定） |
+| `git push` | 2回目以降（-uで設定済みの場合） |
+
+---
+
+## 🌿 ブランチ操作
+
+### 基本操作
+
+| コマンド | 説明 |
+|---------|------|
+| `git branch` | ブランチ一覧表示 |
+| `git branch -a` | 全ブランチ表示（リモート含む） |
+| `git switch -c feature/xxx` | ブランチ作成＋移動 |
+| `git switch main` | 既存ブランチに移動 |
+| `git switch -` | 直前のブランチに戻る |
+| `git branch -d feature/xxx` | ブランチ削除（マージ済み） |
+| `git branch -D feature/xxx` | ブランチ強制削除 |
+| `git branch -m 新しい名前` | ブランチ名変更 |
+
+---
+
+## 🔍 状態確認・履歴確認
+
+### 状態確認
+
+| コマンド | 説明 |
+|---------|------|
+| `git status` | 変更状態確認 |
+| `git diff` | ワーキングツリーの差分 |
+| `git diff --cached` | ステージング済みの差分 |
+| `git diff HEAD` | 全変更の差分 |
+| `git diff <ファイル名>` | 特定ファイルの差分 |
+| `git diff main feature/xxx` | ブランチ間の差分 |
+
+### 履歴確認
+
+| コマンド | 説明 |
+|---------|------|
+| `git log` | 詳細な履歴表示 |
+| `git log --oneline` | 1行で簡潔表示 |
+| `git log --oneline --graph --all` | グラフ表示 |
+| `git log -5` | 最新5件のみ |
+| `git log --since="yesterday"` | 昨日以降 |
+| `git log --author="Tanaka"` | 特定作者 |
+| `git log -- <ファイル名>` | 特定ファイルの履歴 |
+| `git show <commitID>` | コミット詳細表示 |
+| `git blame <ファイル名>` | 各行の編集者表示 |
+
+---
+
+## 🔄 リモート操作
+
+| コマンド | 説明 |
+|---------|------|
+| `git remote -v` | リモート一覧表示 |
+| `git remote add origin <URL>` | リモート追加 |
+| `git fetch origin` | リモートの情報取得（マージしない） |
+| `git pull origin main` | 取得＋マージ同時実行 |
+| `git push origin main` | リモートにプッシュ |
+| `git push origin --delete feature/xxx` | リモートブランチ削除 |
+
+---
+
+## 💾 一時保存（stash）
+
+| コマンド | 説明 |
+|---------|------|
+| `git stash` | 変更を一時退避 |
+| `git stash save "作業中のログイン"` | 名前付きで退避 |
+| `git stash list` | 退避一覧表示 |
+| `git stash pop` | 最新のstashを復元＋削除 |
+| `git stash apply` | 最新のstashを復元（残す） |
+| `git stash apply stash@{0}` | 特定のstashを復元 |
+| `git stash drop stash@{0}` | 特定のstashを削除 |
+| `git stash clear` | 全stashを削除 |
+
+---
+
+## ⏮️ 変更の取り消し・巻き戻し
+
+### ファイルの変更を取り消し
+
+| コマンド | 説明 | 危険度 |
+|---------|------|--------|
+| `git restore <ファイル名>` | ファイルの編集を取り消し | 低 |
+| `git restore .` | 全ファイルの編集を取り消し | 中 |
+| `git restore --staged <ファイル名>` | ステージング解除 | 低 |
+
+### コミットの取り消し
+
+| コマンド | 説明 | 危険度 |
+|---------|------|--------|
+| `git reset --soft HEAD~1` | コミット取り消し（変更は残す） | 低 |
+| `git reset HEAD~1` | コミット＋ステージング取り消し | 中 |
+| `git reset --hard HEAD~1` | コミット＋変更を完全削除 | 高 |
+| `git revert <commitID>` | コミットを打ち消す（安全） | 低 |
+| `git revert HEAD` | 直前のコミットを打ち消す | 低 |
+
+### その他の巻き戻し
+
+| コマンド | 説明 |
+|---------|------|
+| `git reflog` | 全操作履歴表示（削除したコミットも） |
+| `git reset --hard <commitID>` | 特定コミットまで戻る |
+| `git merge --abort` | マージを中止 |
+| `git rebase --abort` | リベースを中止 |
+
+---
+
+## 🔀 統合操作
+
+| コマンド | 説明 |
+|---------|------|
+| `git merge feature/xxx` | ブランチをマージ |
+| `git merge origin/main` | リモートブランチをマージ |
+| `git rebase main` | リベース（上級者向け） |
+| `git cherry-pick <commitID>` | 特定コミットのみ取り込み |
+
+---
+
+## 🏷️ タグ操作
+
+| コマンド | 説明 |
+|---------|------|
+| `git tag` | タグ一覧表示 |
+| `git tag -a v1.0.0 -m "バージョン1.0.0"` | 注釈付きタグ作成 |
+| `git tag v1.0.0` | 軽量タグ作成 |
+| `git push origin v1.0.0` | タグをプッシュ |
+| `git push origin --tags` | 全タグをプッシュ |
+| `git tag -d v1.0.0` | ローカルタグ削除 |
+| `git push origin :v1.0.0` | リモートタグ削除 |
+
+---
+
+## ⚙️ 便利なエイリアス設定
+
+```bash
+# よく使うコマンドを短縮
+git config --global alias.st status
+git config --global alias.sw switch
+git config --global alias.br branch
+git config --global alias.cm "commit -m"
+git config --global alias.lg "log --oneline --graph --all"
+
+# 使用例
+git st        # git status
+git sw main   # git switch main
+git br        # git branch
+git cm "メッセージ"  # git commit -m "メッセージ"
+git lg        # きれいなログ表示
+```
+
+---
+
+## 🚨 トラブル対応コマンド
+
+### 競合解決
+
+```bash
+# 1. 競合ファイル確認
+git status
+
+# 2. ファイルを手動で修正
+# （VSCodeで差分を解決）
+
+# 3. 解決後
+git add .
+git commit -m "Merge: 競合を解決"
+```
+
+### 間違えた時の対処
+
+| 状況 | コマンド |
+|------|---------|
+| 間違えて編集した | `git restore <ファイル名>` |
+| 間違えてaddした | `git restore --staged <ファイル名>` |
+| コミットメッセージ間違えた | `git commit --amend -m "正しいメッセージ"` |
+| コミットを取り消したい（push前） | `git reset --soft HEAD~1` |
+| コミットを取り消したい（push後） | `git revert HEAD` |
+| 消えたコミットを復元 | `git reflog` → `git reset --hard <commitID>` |
+
+---
+
+## 📊 コミットメッセージの接頭辞
+
+| 接頭辞 | 意味 | 例 |
+|--------|------|-----|
+| `feat:` | 新機能追加 | feat: ログイン機能を追加 |
+| `fix:` | バグ修正 | fix: ログインエラーを修正 |
+| `docs:` | ドキュメント | docs: READMEを更新 |
+| `style:` | コード整形 | style: インデント修正 |
+| `refactor:` | リファクタリング | refactor: 関数を整理 |
+| `test:` | テスト追加 | test: ログインテスト追加 |
+| `chore:` | ビルド・設定 | chore: package.json更新 |
+| `perf:` | パフォーマンス改善 | perf: クエリを最適化 |
+
+---
+
+## 🎯 シーン別コマンド早見表
+
+### 朝の出勤時
+
+```bash
+git switch main
+git pull origin main
+git switch -c feature/today-task
+```
+
+### 作業完了時
+
+```bash
+git status
+git add .
+git commit -m "feat: 機能を完成"
+git push origin feature/today-task
+# → GitHubでPR作成
+```
+
+### 緊急でブランチ切り替え
+
+```bash
+git stash
+git switch 別のブランチ
+# 作業後
+git switch 元のブランチ
+git stash pop
+```
+
+### developの最新を取り込む
+
+```bash
+git add .
+git commit -m "WIP: 一時保存"
+git switch develop
+git pull origin develop
+git switch -
+git merge develop
+```
+
+---
+
+## 🚫 絶対にやってはいけないコマンド
+
+| コマンド | 理由 |
+|---------|------|
+| `git push --force` | チームメンバーの変更が消える |
+| `git reset --hard HEAD~1` (push後) | リモートと乖離する |
+| `git add .env` | 機密情報をコミット |
+| `git commit -m "修正"` | メッセージが不明瞭 |
+
+---
+
+## ✅ 毎日使うコマンドチェックリスト
+
+**朝:**
+```bash
+□ git status
+□ git pull origin main
+```
+
+**作業中:**
+```bash
+□ git status（何度でも）
+□ git add .
+□ git commit -m "..."
+```
+
+**終業時:**
+```bash
+□ git push origin feature/xxx
+□ GitHubでPR作成
+```
+
+---
+
+この一覧表を手元に置いて、分からないコマンドが出てきたらすぐに確認できるようにしましょう。
