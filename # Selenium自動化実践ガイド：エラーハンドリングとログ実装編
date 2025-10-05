@@ -1,0 +1,293 @@
+# Selenium自動化実践ガイド：エラーハンドリングとログ実装編
+
+## はじめに
+
+前回の基本編に続き、本記事では**実務で必須となるエラーハンドリングとログ機能**を実装したSelenium関数を紹介します。本番環境でも安心して使える堅牢なコードを目指します。
+
+## 前提条件
+
+```bash
+pip install selenium webdriver-manager
+```
+
+## ログ設定の基本
+
+すべての操作をログファイルに記録することで、エラー発生時の原因特定が容易になります。
+
+```python
+import logging
+
+logging.basicConfig(
+    filename="selenium_log.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+```
+
+## 1. WebDriverセットアップ（ログ対応版）
+
+```python
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+import logging
+
+def setup_driver():
+    """
+    WebDriverを初期化（エラーハンドリング付き）
+    
+    Returns:
+        WebDriver: 初期化済みのWebDriverオブジェクト
+    """
+    try:
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service)
+        driver.implicitly_wait(10)  # 暗黙的待機
+        logging.info("WebDriverを初期化しました。")
+        return driver
+    except Exception as e:
+        logging.error(f"WebDriverの初期化中にエラーが発生: {e}")
+        raise
+```
+
+## 2. スクリーンショット撮影（ログ対応版）
+
+```python
+def take_screenshot(driver, filename="screenshot.png"):
+    """
+    スクリーンショットを撮影（成功/失敗をログ記録）
+    
+    Args:
+        driver: WebDriverオブジェクト
+        filename: 保存ファイル名
+    """
+    try:
+        driver.save_screenshot(filename)
+        success_msg = f"スクリーンショット保存成功: {filename}"
+        logging.info(success_msg)
+        print(success_msg)
+    except Exception as e:
+        error_msg = f"スクリーンショット保存失敗: {str(e)}"
+        logging.error(error_msg)
+        print(error_msg)
+```
+
+## 3. 検索＆画面遷移（ログ対応版）
+
+```python
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+
+def search_and_navigate(driver, search_box_xpath, query, submit_button_xpath=None):
+    """
+    検索ボックスに入力して画面遷移
+    
+    Args:
+        search_box_xpath: 検索ボックスのXPath
+        query: 検索キーワード
+        submit_button_xpath: 送信ボタンのXPath（省略可）
+    """
+    try:
+        search_box = driver.find_element(By.XPATH, search_box_xpath)
+        search_box.send_keys(query)
+        
+        if submit_button_xpath:
+            driver.find_element(By.XPATH, submit_button_xpath).click()
+        else:
+            search_box.send_keys(Keys.RETURN)
+        
+        success_msg = f"'{query}' で検索して画面遷移しました"
+        logging.info(success_msg)
+        print(success_msg)
+        
+    except Exception as e:
+        error_msg = f"検索失敗: '{query}', エラー: {str(e)}"
+        logging.error(error_msg)
+        print(error_msg)
+```
+
+## 4. 要素クリック（XPath版・ログ対応）
+
+```python
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+def click_element_by_xpath(driver, xpath, timeout=10):
+    """
+    XPathで要素をクリック（待機機能付き）
+    
+    Args:
+        xpath: クリック対象のXPath
+        timeout: 待機時間（秒）
+    """
+    try:
+        element = WebDriverWait(driver, timeout).until(
+            EC.presence_of_element_located((By.XPATH, xpath))
+        )
+        element.click()
+        success_msg = f"XPath '{xpath}' の要素をクリック成功"
+        logging.info(success_msg)
+        print(success_msg)
+        
+    except Exception as e:
+        error_msg = f"XPath '{xpath}' のクリック失敗: {str(e)}"
+        logging.error(error_msg)
+        print(error_msg)
+```
+
+## 5. テキスト入力（ログ対応版）
+
+```python
+def input_text_by_xpath(driver, xpath, text):
+    """
+    XPathでフォームにテキスト入力
+    
+    Args:
+        xpath: 入力フォームのXPath
+        text: 入力するテキスト
+    """
+    try:
+        form = driver.find_element(By.XPATH, xpath)
+        form.send_keys(text)
+        success_msg = f"XPath '{xpath}' に '{text}' を入力成功"
+        logging.info(success_msg)
+        print(success_msg)
+        
+    except Exception as e:
+        error_msg = f"XPath '{xpath}' への入力失敗: {str(e)}"
+        logging.error(error_msg)
+        print(error_msg)
+```
+
+## 6. Enterキー送信（リトライ機能付き）
+
+```python
+import time
+
+def send_enter_practical(element, retries=3, delay=1):
+    """
+    Enterキー送信（リトライ対応）
+    
+    Args:
+        element: 対象要素
+        retries: リトライ回数
+        delay: リトライ間隔（秒）
+        
+    Returns:
+        bool: 成功時True、失敗時False
+    """
+    for attempt in range(retries):
+        try:
+            logging.info(f"Attempt {attempt + 1}: Sending ENTER")
+            element.send_keys(Keys.ENTER)
+            logging.info("ENTER送信成功")
+            return True
+            
+        except Exception as e:
+            logging.warning(f"Attempt {attempt + 1} failed: {e}")
+            time.sleep(delay)
+    
+    logging.error(f"{retries}回のリトライ後も失敗")
+    return False
+```
+
+## 実践例：Google検索の完全版
+
+```python
+if __name__ == "__main__":
+    # ログ設定
+    logging.basicConfig(
+        filename="selenium_log.log",
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+    
+    driver = setup_driver()
+    
+    try:
+        # 1. URLを開く
+        driver.get("https://www.google.com")
+        logging.info("Google開きました")
+        
+        # 2. 検索ボックスに入力
+        search_box = driver.find_element(By.NAME, "q")
+        search_box.send_keys("Python Selenium")
+        logging.info("検索キーワード入力完了")
+        
+        # 3. Enterで検索実行
+        if send_enter_practical(search_box):
+            logging.info("検索実行成功")
+        else:
+            logging.error("検索実行失敗")
+        
+        # 4. 結果確認
+        time.sleep(3)
+        logging.info(f"ページタイトル: {driver.title}")
+        
+        # 5. スクリーンショット撮影
+        take_screenshot(driver, "search_result.png")
+        
+    except Exception as e:
+        logging.error(f"予期しないエラー: {e}", exc_info=True)
+        take_screenshot(driver, "error_screenshot.png")
+        
+    finally:
+        driver.quit()
+        logging.info("ブラウザを閉じました")
+```
+
+## ログファイルの見方
+
+実行後、`selenium_log.log`に以下のような記録が残ります：
+
+```
+2025-01-15 10:30:45 - INFO - WebDriverを初期化しました。
+2025-01-15 10:30:47 - INFO - Google開きました
+2025-01-15 10:30:48 - INFO - 検索キーワード入力完了
+2025-01-15 10:30:48 - INFO - Attempt 1: Sending ENTER
+2025-01-15 10:30:48 - INFO - ENTER送信成功
+2025-01-15 10:30:51 - INFO - ページタイトル: Python Selenium - Google 検索
+2025-01-15 10:30:51 - INFO - スクリーンショット保存成功: search_result.png
+2025-01-15 10:30:52 - INFO - ブラウザを閉じました
+```
+
+## エラーハンドリングのベストプラクティス
+
+### 1. 常にtry-except-finallyを使う
+
+```python
+try:
+    # メイン処理
+    pass
+except Exception as e:
+    logging.error(f"エラー: {e}")
+    take_screenshot(driver, "error.png")
+finally:
+    driver.quit()  # 必ず実行
+```
+
+### 2. ログとコンソール出力を両方行う
+
+```python
+success_msg = "処理成功"
+logging.info(success_msg)
+print(success_msg)  # ユーザーにも表示
+```
+
+### 3. リトライ機能を実装
+
+一時的なエラーに対応するため、重要な操作にはリトライを実装します。
+
+## まとめ
+
+- **ログ記録**で問題発生時の追跡が容易に
+- **例外処理**でスクリプトの安定性向上
+- **リトライ機能**で一時的なエラーに対応
+- **スクリーンショット**でエラー状況を可視化
+
+これらの実装により、実務レベルの堅牢な自動化スクリプトが作成できます。
+
+## 参考リンク
+
+- [Selenium公式ドキュメント](https://www.selenium.dev/documentation/)
+- [Python logging公式ドキュメント](https://docs.python.org/ja/3/library/logging.html)
