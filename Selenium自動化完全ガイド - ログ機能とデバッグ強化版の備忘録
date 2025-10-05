@@ -1,0 +1,583 @@
+# Selenium自動化完全ガイド - ログ機能とデバッグ強化版
+
+素晴らしい改善提案をありがとうございます! 今回は、入力確認、ログ機能、再試行機能を追加した最強版の関数群を作成します!
+
+## 最強版: ログ・再試行・入力確認付き完全版
+
+```python
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    ElementNotInteractableException,
+    TimeoutException,
+    WebDriverException
+)
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import logging
+import os
+import time
+from datetime import datetime
+
+# ==================== ログ設定 ====================
+
+def setup_logging(log_file="selenium_automation.log", level=logging.INFO):
+    """
+    ログ設定を初期化する関数
+    
+    Args:
+        log_file (str): ログファイルのパス
+        level: ログレベル (INFO, DEBUG, WARNING, ERROR)
+    """
+    # ログディレクトリを作成
+    log_dir = os.path.dirname(log_file)
+    if log_dir and not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    
+    # ログフォーマット
+    log_format = '%(asctime)s - %(levelname)s - [%(funcName)s] %(message)s'
+    date_format = '%Y-%m-%d %H:%M:%S'
+    
+    # ロギング設定
+    logging.basicConfig(
+        level=level,
+        format=log_format,
+        datefmt=date_format,
+        handlers=[
+            logging.FileHandler(log_file, encoding='utf-8'),
+            logging.StreamHandler()
+        ]
+    )
+    
+    logging.info("="*60)
+    logging.info("Selenium自動化ログ開始")
+    logging.info("="*60)
+
+
+# ==================== 入力確認付き関数 ====================
+
+def input_text_by_xpath(driver, xpath, text, timeout=10, verify=True):
+    """
+    XPathを指定してフォームにテキストを入力する関数（入力確認付き）
+    
+    Args:
+        driver (WebDriver): WebDriverオブジェクト
+        xpath (str): 入力対象のフォームのXPath
+        text (str): 入力するテキスト
+        timeout (int): 待機時間（秒）
+        verify (bool): 入力内容を確認するか
+    """
+    try:
+        logging.info(f"XPath '{xpath}' への入力を開始します...")
+        
+        # 要素が入力可能になるまで待機
+        form = WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((By.XPATH, xpath))
+        )
+        
+        # 入力処理
+        form.clear()
+        form.send_keys(text)
+        
+        # 入力確認
+        if verify:
+            actual_value = form.get_attribute('value')
+            if actual_value == text:
+                logging.info(f"✅ XPath '{xpath}' に '{text}' を正しく入力しました")
+            else:
+                logging.warning(f"⚠️ XPath '{xpath}' に入力が正しく反映されませんでした")
+                logging.warning(f"期待値: '{text}', 実際: '{actual_value}'")
+        else:
+            logging.info(f"XPath '{xpath}' に '{text}' を入力しました")
+            
+    except TimeoutException:
+        logging.error(f"❌ タイムアウト: XPath '{xpath}' の要素が{timeout}秒以内に準備されませんでした")
+    except NoSuchElementException:
+        logging.error(f"❌ 要素未検出: XPath '{xpath}' の要素が見つかりませんでした")
+    except ElementNotInteractableException:
+        logging.error(f"❌ 操作不能: XPath '{xpath}' の要素が非表示または無効です")
+    except WebDriverException as e:
+        logging.error(f"❌ WebDriverエラー: {e}")
+    except Exception as e:
+        logging.error(f"❌ 予期しないエラー: {e}")
+
+
+def input_text_by_css(driver, css_selector, text, timeout=10, verify=True, log_level=logging.INFO):
+    """
+    CSSセレクタを指定してフォームにテキストを入力する関数（入力確認付き）
+    
+    Args:
+        driver (WebDriver): WebDriverオブジェクト
+        css_selector (str): 入力対象のフォームのCSSセレクタ
+        text (str): 入力するテキスト
+        timeout (int): 要素が入力可能になるまでの待機時間（秒）
+        verify (bool): 入力内容を確認するか
+        log_level (int): ログの詳細度
+    """
+    logging.getLogger().setLevel(log_level)
+    
+    try:
+        logging.info(f"CSSセレクタ '{css_selector}' への入力を開始します...")
+        
+        # 要素がクリック可能になるまで待機
+        form = WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, css_selector))
+        )
+        
+        # 入力処理
+        form.clear()
+        form.send_keys(text)
+        
+        # 入力確認
+        if verify:
+            actual_value = form.get_attribute('value')
+            if actual_value == text:
+                logging.info(f"✅ CSSセレクタ '{css_selector}' に '{text}' を正しく入力しました")
+            else:
+                logging.warning(f"⚠️ CSSセレクタ '{css_selector}' に入力が正しく反映されませんでした")
+                logging.warning(f"期待値: '{text}', 実際: '{actual_value}'")
+        else:
+            logging.info(f"CSSセレクタ '{css_selector}' に '{text}' を入力しました")
+            
+    except TimeoutException:
+        logging.error(f"❌ タイムアウト: CSSセレクタ '{css_selector}' の要素が{timeout}秒以内に準備されませんでした")
+    except NoSuchElementException:
+        logging.error(f"❌ 要素未検出: CSSセレクタ '{css_selector}' の要素が見つかりませんでした")
+    except ElementNotInteractableException:
+        logging.error(f"❌ 操作不能: CSSセレクタ '{css_selector}' の要素が非表示または無効です")
+    except WebDriverException as e:
+        logging.error(f"❌ WebDriverエラー: {e}")
+    except Exception as e:
+        logging.error(f"❌ 予期しないエラー: {e}")
+
+
+# ==================== 再試行機能付き関数 ====================
+
+def input_text_with_retries(driver, selector, text, by_type="xpath", timeout=10, retries=3):
+    """
+    再試行機能付きテキスト入力関数
+    
+    Args:
+        driver: WebDriverオブジェクト
+        selector: XPathまたはCSSセレクタ
+        text: 入力するテキスト
+        by_type: "xpath" または "css"
+        timeout: 待機時間（秒）
+        retries: 再試行回数
+    """
+    for attempt in range(retries):
+        try:
+            logging.info(f"入力試行 {attempt + 1}/{retries}...")
+            
+            if by_type == "xpath":
+                input_text_by_xpath(driver, selector, text, timeout, verify=True)
+            else:
+                input_text_by_css(driver, selector, text, timeout, verify=True)
+            
+            logging.info(f"✅ 入力成功（試行回数: {attempt + 1}）")
+            return True
+            
+        except (TimeoutException, ElementNotInteractableException) as e:
+            logging.warning(f"⚠️ 試行 {attempt + 1}/{retries} 失敗: {e}")
+            if attempt < retries - 1:
+                wait_time = 2 * (attempt + 1)  # 指数バックオフ
+                logging.info(f"⏱️ {wait_time}秒待機してから再試行します...")
+                time.sleep(wait_time)
+            else:
+                logging.error(f"❌ {retries}回の試行すべてが失敗しました")
+                return False
+
+
+def click_with_retries(driver, selector, by_type="css", timeout=10, retries=3):
+    """
+    再試行機能付きクリック関数
+    
+    Args:
+        driver: WebDriverオブジェクト
+        selector: XPathまたはCSSセレクタ
+        by_type: "xpath" または "css"
+        timeout: 待機時間（秒）
+        retries: 再試行回数
+    """
+    for attempt in range(retries):
+        try:
+            logging.info(f"クリック試行 {attempt + 1}/{retries}...")
+            
+            by = By.CSS_SELECTOR if by_type == "css" else By.XPATH
+            element = WebDriverWait(driver, timeout).until(
+                EC.element_to_be_clickable((by, selector))
+            )
+            element.click()
+            
+            logging.info(f"✅ クリック成功（試行回数: {attempt + 1}）")
+            return True
+            
+        except (TimeoutException, ElementNotInteractableException) as e:
+            logging.warning(f"⚠️ 試行 {attempt + 1}/{retries} 失敗: {e}")
+            if attempt < retries - 1:
+                wait_time = 2 * (attempt + 1)
+                logging.info(f"⏱️ {wait_time}秒待機してから再試行します...")
+                time.sleep(wait_time)
+            else:
+                logging.error(f"❌ {retries}回の試行すべてが失敗しました")
+                return False
+
+
+# ==================== 可視性確認付きクリック ====================
+
+def click_element_safe(driver, selector, by_type="css", timeout=10, check_visibility=True):
+    """
+    可視性確認付き安全なクリック関数
+    
+    Args:
+        driver: WebDriverオブジェクト
+        selector: XPathまたはCSSセレクタ
+        by_type: "xpath" または "css"
+        timeout: 待機時間（秒）
+        check_visibility: 可視性をチェックするか
+    """
+    try:
+        by = By.CSS_SELECTOR if by_type == "css" else By.XPATH
+        
+        if check_visibility:
+            logging.info(f"要素の可視性を確認中: {selector}")
+            element = WebDriverWait(driver, timeout).until(
+                EC.visibility_of_element_located((by, selector))
+            )
+            
+            if not element.is_displayed():
+                raise ElementNotInteractableException(f"要素が非表示です: {selector}")
+            
+        # クリック可能まで待機
+        element = WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((by, selector))
+        )
+        element.click()
+        
+        logging.info(f"✅ {by_type.upper()}セレクタ '{selector}' をクリックしました")
+        return True
+        
+    except TimeoutException:
+        logging.error(f"❌ タイムアウト: '{selector}' が{timeout}秒以内にクリック可能になりませんでした")
+        return False
+    except ElementNotInteractableException as e:
+        logging.error(f"❌ 操作不能: {e}")
+        return False
+    except Exception as e:
+        logging.error(f"❌ エラーが発生しました: {e}")
+        return False
+
+
+# ==================== スクリーンショット（ログ付き） ====================
+
+def take_screenshot(driver, filename="screenshot.png"):
+    """スクリーンショットを撮影して保存する（ログ付き）"""
+    try:
+        directory = os.path.dirname(filename)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        
+        driver.save_screenshot(filename)
+        logging.info(f"📸 スクリーンショットを保存: {filename}")
+        return True
+        
+    except WebDriverException as e:
+        logging.error(f"❌ スクリーンショット撮影エラー: {e}")
+        return False
+    except Exception as e:
+        logging.error(f"❌ 予期しないエラー: {e}")
+        return False
+
+
+# ==================== 実践例 ====================
+
+def create_advanced_test_html():
+    """高度なテスト用HTMLを作成"""
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <title>Selenium高度テスト</title>
+        <style>
+            body { 
+                font-family: 'Arial', sans-serif; 
+                padding: 40px; 
+                background: #f5f5f5;
+            }
+            .container {
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                max-width: 700px;
+                margin: 0 auto;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }
+            h1 { color: #2c3e50; }
+            .form-group {
+                margin: 20px 0;
+            }
+            label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+                color: #34495e;
+            }
+            input[type="text"], input[type="email"] {
+                width: 100%;
+                padding: 10px;
+                border: 2px solid #ddd;
+                border-radius: 5px;
+                font-size: 14px;
+                box-sizing: border-box;
+            }
+            input:focus {
+                border-color: #3498db;
+                outline: none;
+            }
+            button {
+                padding: 12px 30px;
+                margin: 10px 5px;
+                border: none;
+                border-radius: 5px;
+                font-size: 16px;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            .btn-primary {
+                background: #3498db;
+                color: white;
+            }
+            .btn-primary:hover {
+                background: #2980b9;
+            }
+            .btn-secondary {
+                background: #95a5a6;
+                color: white;
+            }
+            #result {
+                margin-top: 20px;
+                padding: 15px;
+                background: #ecf0f1;
+                border-radius: 5px;
+                min-height: 50px;
+            }
+            .hidden { display: none; }
+            .delayed {
+                opacity: 0;
+                transition: opacity 2s;
+            }
+            .delayed.show {
+                opacity: 1;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚀 Selenium高度テスト</h1>
+            
+            <div class="form-group">
+                <label for="username">ユーザー名 (XPath用)</label>
+                <input type="text" id="username" placeholder="ユーザー名を入力">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">メールアドレス (CSS用)</label>
+                <input type="email" class="email-field" placeholder="email@example.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">パスワード (遅延表示テスト)</label>
+                <input type="text" id="delayed-input" class="delayed" placeholder="2秒後に表示">
+            </div>
+            
+            <button class="btn-primary" id="submit-btn" onclick="showResult()">送信</button>
+            <button class="btn-secondary" id="reset-btn" onclick="resetForm()">リセット</button>
+            
+            <div id="result"></div>
+        </div>
+        
+        <script>
+            // 遅延表示
+            setTimeout(() => {
+                document.getElementById('delayed-input').classList.add('show');
+            }, 2000);
+            
+            function showResult() {
+                const username = document.getElementById('username').value;
+                const email = document.querySelector('.email-field').value;
+                const result = document.getElementById('result');
+                result.innerHTML = `
+                    <strong>✅ フォーム送信成功!</strong><br>
+                    ユーザー名: ${username}<br>
+                    メール: ${email}<br>
+                    時刻: ${new Date().toLocaleTimeString('ja-JP')}
+                `;
+            }
+            
+            function resetForm() {
+                document.getElementById('username').value = '';
+                document.querySelector('.email-field').value = '';
+                document.getElementById('result').innerHTML = '';
+            }
+        </script>
+    </body>
+    </html>
+    """
+    
+    with open("selenium_advanced_test.html", "w", encoding="utf-8") as f:
+        f.write(html_content)
+    
+    return os.path.abspath("selenium_advanced_test.html")
+
+
+def main():
+    """全機能を使った総合テスト（ログ・再試行付き）"""
+    
+    # ログ設定
+    setup_logging(log_file="logs/selenium_test.log", level=logging.INFO)
+    
+    # テストHTML作成
+    html_path = create_advanced_test_html()
+    logging.info(f"テストHTMLを作成: {html_path}")
+    
+    # WebDriver起動
+    driver = webdriver.Chrome()
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    try:
+        # HTMLファイルを開く
+        driver.get(f"file:///{html_path}")
+        logging.info("🌐 テストページを開きました")
+        time.sleep(2)
+        
+        # 初期スクリーンショット
+        take_screenshot(driver, f"screenshots/00_initial_{timestamp}.png")
+        
+        # ===== 入力確認テスト =====
+        logging.info("\n" + "="*60)
+        logging.info("📝 入力確認テスト開始")
+        logging.info("="*60)
+        
+        input_text_by_xpath(driver, '//input[@id="username"]', "testuser123", verify=True)
+        time.sleep(1)
+        
+        input_text_by_css(driver, ".email-field", "test@example.com", verify=True)
+        time.sleep(1)
+        
+        take_screenshot(driver, f"screenshots/01_inputs_{timestamp}.png")
+        
+        # ===== 再試行テスト =====
+        logging.info("\n" + "="*60)
+        logging.info("🔄 再試行機能テスト")
+        logging.info("="*60)
+        
+        # 遅延表示される要素に対する再試行
+        input_text_with_retries(
+            driver, 
+            '#delayed-input', 
+            'password123', 
+            by_type="css",
+            timeout=15,
+            retries=3
+        )
+        time.sleep(1)
+        
+        take_screenshot(driver, f"screenshots/02_delayed_input_{timestamp}.png")
+        
+        # ===== 可視性確認付きクリック =====
+        logging.info("\n" + "="*60)
+        logging.info("👆 可視性確認付きクリック")
+        logging.info("="*60)
+        
+        click_element_safe(driver, "#submit-btn", by_type="css", check_visibility=True)
+        time.sleep(2)
+        
+        take_screenshot(driver, f"screenshots/03_submitted_{timestamp}.png")
+        
+        # ===== 再試行クリック =====
+        logging.info("\n" + "="*60)
+        logging.info("🔄 再試行クリックテスト")
+        logging.info("="*60)
+        
+        click_with_retries(driver, "#reset-btn", by_type="css", retries=3)
+        time.sleep(2)
+        
+        take_screenshot(driver, f"screenshots/04_reset_{timestamp}.png")
+        
+        logging.info("\n" + "="*60)
+        logging.info("✅ 全てのテストが正常に完了しました！")
+        logging.info("="*60)
+        
+    except Exception as e:
+        logging.error(f"\n❌ 致命的なエラーが発生: {e}", exc_info=True)
+        take_screenshot(driver, f"screenshots/error_{timestamp}.png")
+    
+    finally:
+        time.sleep(3)
+        driver.quit()
+        logging.info("🔚 ブラウザを閉じました")
+        logging.info("="*60)
+        logging.info("Selenium自動化ログ終了")
+        logging.info("="*60)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+## 実行結果の例（ログ出力）
+
+```
+2025-01-05 14:45:22 - INFO - [setup_logging] ============================================================
+2025-01-05 14:45:22 - INFO - [setup_logging] Selenium自動化ログ開始
+2025-01-05 14:45:22 - INFO - [setup_logging] ============================================================
+2025-01-05 14:45:22 - INFO - [main] テストHTMLを作成: /path/to/selenium_advanced_test.html
+2025-01-05 14:45:25 - INFO - [main] 🌐 テストページを開きました
+2025-01-05 14:45:27 - INFO - [take_screenshot] 📸 スクリーンショットを保存: screenshots/00_initial_20250105_144522.png
+
+============================================================
+2025-01-05 14:45:27 - INFO - [main] 📝 入力確認テスト開始
+============================================================
+2025-01-05 14:45:27 - INFO - [input_text_by_xpath] XPath '//input[@id="username"]' への入力を開始します...
+2025-01-05 14:45:27 - INFO - [input_text_by_xpath] ✅ XPath '//input[@id="username"]' に 'testuser123' を正しく入力しました
+2025-01-05 14:45:28 - INFO - [input_text_by_css] CSSセレクタ '.email-field' への入力を開始します...
+2025-01-05 14:45:28 - INFO - [input_text_by_css] ✅ CSSセレクタ '.email-field' に 'test@example.com' を正しく入力しました
+2025-01-05 14:45:29 - INFO - [take_screenshot] 📸 スクリーンショットを保存: screenshots/01_inputs_20250105_144522.png
+
+============================================================
+2025-01-05 14:45:29 - INFO - [main] 🔄 再試行機能テスト
+============================================================
+2025-01-05 14:45:29 - INFO - [input_text_with_retries] 入力試行 1/3...
+2025-01-05 14:45:29 - INFO - [input_text_by_css] CSSセレクタ '#delayed-input' への入力を開始します...
+2025-01-05 14:45:31 - INFO - [input_text_by_css] ✅ CSSセレクタ '#delayed-input' に 'password123' を正しく入力しました
+2025-01-05 14:45:31 - INFO - [input_text_with_retries] ✅ 入力成功（試行回数: 1）
+
+============================================================
+2025-01-05 14:45:34 - INFO - [main] ✅ 全てのテストが正常に完了しました！
+============================================================
+```
+
+## まとめ
+
+### 追加された強力な機能
+
+1. **✅ 入力確認機能**
+   - `verify=True`で入力内容を自動検証
+   - 期待値と実際の値を比較
+
+2. **🔄 再試行機能**
+   - 指数バックオフで再試行
+   - タイムアウトや操作不能エラーに自動対応
+
+3. **📊 詳細なログ記録**
+   - ファイルとコンソールの両方に出力
+   - タイムスタンプ、関数名、ログレベル付き
+
+4. **👁️ 可視性確認**
+   - 要素が表示されているか確認
+   - 非表示要素へのエラー操作を防止
+
+これで、プロダクション環境でも使える堅牢なSelenium自動化ツールが完成しました! 🎉
