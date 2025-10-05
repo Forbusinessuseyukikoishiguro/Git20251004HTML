@@ -1,0 +1,546 @@
+かわいいテーマでいきましょうね🐰✨
+ここでは、「**ふわふわ大福店・うさうさ店長のPython関数**」を例にして、
+`docstring` から自動的にドキュメントを生成する方法を
+**Sphinx** と **pdoc** の2種類で丁寧に説明します！
+
+---
+
+# 🥇 1. Sphinxで自動ドキュメント生成（公式系）
+
+---
+
+## 🧁 ステップ1：Sphinxをインストール
+
+まず、プロジェクトにSphinxを導入します。
+
+```bash
+pip install sphinx
+```
+
+---
+
+## 🧁 ステップ2：初期設定
+
+作業フォルダ（例：`fluffy_dango`）を作り、Sphinxを初期化します。
+
+```bash
+mkdir fluffy_dango_docs
+cd fluffy_dango_docs
+sphinx-quickstart
+```
+
+🪄 質問に答えて進めます：
+
+| 質問                                    | 推奨回答例          |
+| ------------------------------------- | -------------- |
+| Project name                          | FuwafuwaDango  |
+| Author name                           | Usausa Manager |
+| Separate source and build directories | y（おすすめ）        |
+
+これで `source/` と `build/` フォルダができます。
+
+---
+
+## 🧁 ステップ3：Pythonファイルを作る
+
+プロジェクトルートに以下のファイルを作成します：
+
+### 📄 `usausa.py`
+
+```python
+def check_and_order(stock: int, threshold: int) -> int:
+    """
+    在庫を確認し、閾値より少なければ追加発注を行う。
+
+    Args:
+        stock (int): 現在の大福の在庫数。
+        threshold (int): 発注を行う在庫の閾値。
+
+    Returns:
+        int: 発注後の在庫数。
+    """
+    if stock < threshold:
+        print("在庫が少ないです。うさうさ店長が追加発注します！")
+        stock += 50
+    else:
+        print("在庫は十分です。うさうさ店長はほっと一息。")
+    return stock
+```
+
+---
+
+## 🧁 ステップ4：モジュールを自動スキャンする設定
+
+`source/conf.py` に以下を追記します：
+
+```python
+import os
+import sys
+sys.path.insert(0, os.path.abspath('..'))  # 1階層上をパスに追加
+```
+
+さらに、拡張機能を追加：
+
+```python
+extensions = [
+    'sphinx.ext.autodoc',  # docstring自動読み取り
+    'sphinx.ext.napoleon', # Google/NumPyスタイル対応
+]
+```
+
+---
+
+## 🧁 ステップ5：ドキュメントのひな型を自動生成
+
+```bash
+sphinx-apidoc -o source ../
+```
+
+これで `source/usausa.rst` が生成されます🐰
+（＝docstringを解析してRstファイルを自動生成）
+
+---
+
+## 🧁 ステップ6：HTMLをビルド！
+
+```bash
+make html
+```
+
+`build/html/index.html` をブラウザで開くと…
+
+🍡✨ うさうさ店長の関数説明がドキュメントとして登場！
+
+---
+
+### ✅ Sphinxの特徴まとめ
+
+| 特徴       | 内容                              |
+| -------- | ------------------------------- |
+| 🔖 標準ツール | Python公式が使用                     |
+| 🧱 柔軟性   | reStructuredTextやMarkdown対応     |
+| 🪶 スタイル  | RTDテーマなどで可愛く整形可                 |
+| 🧩 拡張    | autodoc, napoleon, viewcodeなど多数 |
+
+---
+
+# 🥈 2. pdocで超簡単にドキュメント生成（軽量系）
+
+---
+
+## 🐰 ステップ1：インストール
+
+```bash
+pip install pdoc
+```
+
+---
+
+## 🐰 ステップ2：コマンド一発でHTML生成
+
+```bash
+pdoc -o docs usausa.py
+```
+
+これだけで `docs/usausa.html` が生成されます！
+
+---
+
+## 🐰 ステップ3：ブラウザで開く
+
+```bash
+start docs/usausa.html
+```
+
+すると、**docstringがHTML化**されて、
+うさうさ店長の説明文が自動でドキュメント化✨
+
+---
+
+## 🐰 ステップ4：ローカルサーバーで閲覧もOK
+
+リアルタイムプレビューも可能です👇
+
+```bash
+pdoc --http : usausa.py
+```
+
+ブラウザで [http://localhost:8080](http://localhost:8080) を開くと、
+きれいなAPIドキュメントが見られます！
+
+---
+
+### ✅ pdocの特徴まとめ
+
+| 特徴     | 内容                  |
+| ------ | ------------------- |
+| 🩵 軽量  | コマンド一発でHTML生成       |
+| 💨 速い  | Sphinxより手軽で軽い       |
+| 🐍 モダン | 型ヒントも自動反映           |
+| 📦 用途  | 小規模ツール・学習・チーム内共有に最適 |
+
+---
+
+# 🧁 まとめ（MECE）
+
+| 比較軸  | **Sphinx**           | **pdoc**       |
+| ---- | -------------------- | -------------- |
+| 主な用途 | 大規模プロジェクト / 公式ドキュメント | 小規模 / 学習用ツール   |
+| 対応形式 | reST, Markdown       | DocstringのみでOK |
+| デザイン | 高度にカスタマイズ可能          | 自動整形・即生成       |
+| 拡張性  | 非常に高い                | シンプルで限定的       |
+| 難易度  | やや高め                 | 初心者向け・最速       |
+
+---
+もちろんです🐰✨
+以下は、**「ふわふわ大福店のうさうさ店長」**をテーマにした
+`usausa.py`（Sphinxやpdocで自動ドキュメント化できるサンプルコード）です。
+**GoogleスタイルDocstring + 型ヒント + コメント付き**で、
+新人エンジニアさんにも分かりやすく書いています🍡
+
+---
+
+## 🐇 `usausa.py`
+
+```python
+"""🐰ふわふわ大福店 - うさうさ店長の在庫管理システム
+
+このモジュールは、うさうさ店長が大福の在庫を管理し、
+在庫が少ないときに自動で追加発注を行う機能を提供します。
+
+主な関数:
+    check_and_order(stock, threshold): 在庫を確認して必要なら発注。
+    calculate_total_price(quantity, price): 合計金額を計算。
+    greet_customer(name): お客様に挨拶する。
+"""
+
+# -------------------------------------------
+# 🧁 うさうさ店長の在庫確認関数
+# -------------------------------------------
+
+def check_and_order(stock: int, threshold: int) -> int:
+    """
+    在庫を確認し、閾値より少なければ追加発注を行う。
+
+    Args:
+        stock (int): 現在の大福の在庫数。
+        threshold (int): 発注を行う在庫の閾値。
+
+    Returns:
+        int: 発注後の在庫数。
+
+    Example:
+        >>> check_and_order(10, 20)
+        在庫が少ないです。うさうさ店長が追加発注します！
+        60
+    """
+    if stock < threshold:
+        print("在庫が少ないです。うさうさ店長が追加発注します！")
+        stock += 50  # 50個追加発注
+    else:
+        print("在庫は十分です。うさうさ店長はほっと一息。")
+    return stock
+
+
+# -------------------------------------------
+# 💰 合計金額を計算する関数
+# -------------------------------------------
+
+def calculate_total_price(quantity: int, price: int) -> int:
+    """
+    購入数量と単価から合計金額を計算する。
+
+    Args:
+        quantity (int): 購入する大福の個数。
+        price (int): 1個あたりの価格。
+
+    Returns:
+        int: 合計金額。
+
+    Example:
+        >>> calculate_total_price(5, 200)
+        1000
+    """
+    total = quantity * price
+    print(f"うさうさ店長『{quantity}個で合計{total}円になります！』")
+    return total
+
+
+# -------------------------------------------
+# 🙋 お客様への挨拶関数
+# -------------------------------------------
+
+def greet_customer(name: str) -> str:
+    """
+    お客様の名前を使って挨拶をする。
+
+    Args:
+        name (str): お客様の名前。
+
+    Returns:
+        str: 挨拶メッセージ。
+
+    Example:
+        >>> greet_customer("ゆきこ")
+        'いらっしゃいませ、ゆきこ様！ふわふわ大福はいかがですか？'
+    """
+    message = f"いらっしゃいませ、{name}様！ふわふわ大福はいかがですか？"
+    print(message)
+    return message
+
+
+# -------------------------------------------
+# 🧪 モジュール単体テスト（このファイルを直接実行した場合のみ）
+# -------------------------------------------
+
+if __name__ == "__main__":
+    print("🐰 うさうさ店長の在庫管理システムを起動します！\n")
+
+    # 在庫チェック
+    updated_stock = check_and_order(stock=10, threshold=20)
+    print(f"📦 現在の在庫数: {updated_stock}\n")
+
+    # 合計金額計算
+    total = calculate_total_price(quantity=5, price=200)
+    print(f"💴 合計金額: {total}円\n")
+
+    # 挨拶
+    greet_customer("ゆきこ")
+```
+
+---
+
+## 💡このコードで学べるポイント
+
+| 概念                              | 説明                            |
+| ------------------------------- | ----------------------------- |
+| **Docstring（Googleスタイル）**       | 自動ドキュメント生成に使われる説明文            |
+| **型ヒント**                        | 関数の引数と戻り値の型を明示（pdoc・Sphinx対応） |
+| **`if __name__ == "__main__"`** | スクリプト単体で動作確認できる構造             |
+| **コメント構造**                      | 各ブロックに目的コメントを配置（チーム開発向け）      |
+
+---
+
+## 🪄 使い方（例）
+
+1️⃣ ファイル名を `usausa.py` として保存
+2️⃣ ターミナルで実行：
+
+```bash
+python usausa.py
+```
+
+🐇 実行結果：
+
+```
+🐰 うさうさ店長の在庫管理システムを起動します！
+
+在庫が少ないです。うさうさ店長が追加発注します！
+📦 現在の在庫数: 60
+
+うさうさ店長『5個で合計1000円になります！』
+💴 合計金額: 1000円
+
+いらっしゃいませ、ゆきこ様！ふわふわ大福はいかがですか？
+```
+
+---
+
+このまま `pdoc` や `Sphinx` にかければ、
+**自動でAPIドキュメント生成**できる完璧な教材になります🐰✨
+
+---
+すごく良い流れです🐰✨
+では今回は、「`usausa.py` の docstring から HTML ドキュメントを自動生成する方法」を、
+**pdoc** と **Sphinx** の両方でわかりやすく解説します🍡
+
+新人エンジニアさんでも「今日すぐに試せる」手順です！
+
+---
+
+# 🧁 うさうさ店長の docstring を HTML に変える方法
+
+（pdoc / Sphinx 両対応ガイド）
+
+---
+
+## 🥇 ① 【最も簡単】pdoc で自動ドキュメント生成
+
+pdoc は「**1コマンドでHTML生成できる**」軽量ツール。
+GoogleスタイルのDocstringにも対応していて、すぐに結果が見られます✨
+
+---
+
+### 💡 1. pdoc のインストール
+
+```bash
+pip install pdoc
+```
+
+---
+
+### 💡 2. `usausa.py` をドキュメント化
+
+ターミナルで、`usausa.py` があるフォルダに移動して次を実行👇
+
+```bash
+pdoc usausa.py --html --output-dir docs
+```
+
+これで自動的に以下が生成されます：
+
+```
+📁 docs/
+   └── usausa.html
+```
+
+---
+
+### 💡 3. HTMLを開く
+
+```bash
+start docs/usausa.html     # Windows の場合
+```
+
+または Finder / Explorer で `docs/usausa.html` を開くだけでOK✨
+
+📸 **出力例（ブラウザ表示）**
+
+```
+🐰ふわふわ大福店 - うさうさ店長の在庫管理システム
+
+Functions:
+  check_and_order(stock, threshold)
+  calculate_total_price(quantity, price)
+  greet_customer(name)
+```
+
+各関数の **Args / Returns / Example** まで自動でHTML化されています！
+
+---
+
+## 🥈 ② 【本格派】Sphinxで公式風ドキュメント生成
+
+Sphinxは、Python公式ドキュメントでも使われている本格的ツールです📘
+HTMLだけでなく、PDFやMarkdownにも変換できます。
+
+---
+
+### 💡 1. Sphinx のインストール
+
+```bash
+pip install sphinx
+```
+
+---
+
+### 💡 2. プロジェクトを初期化
+
+```bash
+sphinx-quickstart
+```
+
+質問に答えていく形で設定できます：
+
+| 質問                                    | 推奨回答例            |
+| ------------------------------------- | ---------------- |
+| Project name                          | Fuwafuwa Daifuku |
+| Author name                           | Usausa           |
+| Separate source and build directories | y                |
+| autodoc extension                     | y                |
+| path setup                            | y（自動でパス追加）       |
+
+実行後、以下の構成が作成されます👇
+
+```
+📁 docs/
+   ├── source/
+   │   ├── conf.py
+   │   └── index.rst
+   └── build/
+```
+
+---
+
+### 💡 3. autodoc拡張を有効化
+
+`source/conf.py` を開いて、以下を確認 or 追加：
+
+```python
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',  # Google / NumPy スタイル対応
+]
+```
+
+---
+
+### 💡 4. モジュールを自動取り込み
+
+`source/index.rst` に次を追記👇
+
+```rst
+.. automodule:: usausa
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```
+
+---
+
+### 💡 5. ビルドしてHTML生成！
+
+```bash
+sphinx-build -b html docs/source docs/build
+```
+
+生成後：
+
+```
+📁 docs/build/html/
+   └── index.html
+```
+
+開いてみると…
+公式Pythonドキュメントのような✨
+**「うさうさ店長の在庫管理システムAPI」ページ**ができています！
+
+---
+
+## 🧠 まとめ
+
+| 方法         | 特徴                       | 難易度       |
+| ---------- | ------------------------ | --------- |
+| **pdoc**   | 1行でHTML生成できる。軽量で見やすい。    | ⭐ 初心者向け   |
+| **Sphinx** | 公式ドキュメント風。拡張機能豊富。PDF化も可。 | 🔧 中〜上級向け |
+
+---
+
+## 💬 補足Tips
+
+* **GoogleスタイルDocstring** → `sphinx.ext.napoleon` が自動対応
+* **NumPyスタイルDocstring** → 同じく `napoleon` 拡張でOK
+* **型ヒント** → HTMLにも自動反映される
+* **コード例** → `Example:` ブロックで自動整形
+
+---
+
+🐰 **実践ステップまとめ：**
+
+| ステップ | コマンド                                                 | 説明       |
+| ---- | ---------------------------------------------------- | -------- |
+| ①    | `pip install pdoc`                                   | 環境構築     |
+| ②    | `pdoc usausa.py --html --output-dir docs`            | HTML自動生成 |
+| ③    | `start docs/usausa.html`                             | 結果を確認    |
+| 🧭   | （応用）`sphinx-quickstart` → `sphinx-build -b html ...` | 本格ドキュメント |
+
+---
+
+希望があれば、
+次は「**Sphinxでうさうさ店長のドキュメントを日本語化＆テーマ変更する方法（かわいいHTML化）**」
+も作成できますが、進めてみますか？🐇💻
+
+
+
+
+
