@@ -1,0 +1,427 @@
+"""
+【新人エンジニア向け】Pythonドキュメンテーションスタイル比較
+Google / NumPy / reStructuredText / Epytext / 型ヒント
+
+使い方：
+VSCodeで実行ボタンを押すか、ターミナルで `python ファイル名.py` を実行
+"""
+
+from typing import List, Dict, Optional
+
+
+# ============================================================
+# スタイル1: Google Style（Googleスタイル）
+# ============================================================
+def calculate_tax_google(price: float, tax_rate: float = 0.1) -> float:
+    """消費税を計算する（Googleスタイル）
+    
+    Args:
+        price (float): 商品の価格
+        tax_rate (float, optional): 消費税率. Defaults to 0.1.
+    
+    Returns:
+        float: 消費税額
+    
+    Examples:
+        >>> calculate_tax_google(1000)
+        100.0
+    """
+    return price * tax_rate
+
+
+class ShopGoogle:
+    """お店クラス（Googleスタイル）
+    
+    Attributes:
+        name (str): お店の名前
+        stock (int): 在庫数
+        sales (float): 売上金額
+    """
+    
+    def __init__(self, name: str) -> None:
+        """初期化
+        
+        Args:
+            name (str): お店の名前
+        """
+        self.name: str = name
+        self.stock: int = 0
+        self.sales: float = 0.0
+    
+    def add_stock(self, count: int) -> None:
+        """在庫を追加
+        
+        Args:
+            count (int): 追加する個数
+        """
+        self.stock += count
+        print(f"📦 {count}個追加 → 在庫{self.stock}個")
+    
+    def sell(self, count: int, price: float) -> bool:
+        """商品を販売
+        
+        Args:
+            count (int): 販売個数
+            price (float): 単価
+        
+        Returns:
+            bool: 販売成功ならTrue、在庫不足ならFalse
+        """
+        if self.stock >= count:
+            self.stock -= count
+            self.sales += count * price
+            print(f"💰 {count}個販売 → 売上{count * price}円")
+            return True
+        else:
+            print("⚠️ 在庫不足")
+            return False
+
+
+# ============================================================
+# スタイル2: NumPy Style（NumPyスタイル）
+# ============================================================
+def calculate_total_numpy(price: float, tax_rate: float = 0.1) -> Dict[str, float]:
+    """合計金額を計算する（NumPyスタイル）
+    
+    Parameters
+    ----------
+    price : float
+        商品の価格
+    tax_rate : float, optional
+        消費税率, by default 0.1
+    
+    Returns
+    -------
+    Dict[str, float]
+        価格、税額、合計を含む辞書
+        - 'price': 元の価格
+        - 'tax': 消費税額
+        - 'total': 合計金額
+    
+    Examples
+    --------
+    >>> result = calculate_total_numpy(1000)
+    >>> result['total']
+    1100.0
+    """
+    tax = price * tax_rate
+    total = price + tax
+    return {
+        'price': price,
+        'tax': tax,
+        'total': total
+    }
+
+
+class ShopNumPy:
+    """お店クラス（NumPyスタイル）
+    
+    Parameters
+    ----------
+    name : str
+        お店の名前
+    
+    Attributes
+    ----------
+    name : str
+        お店の名前
+    stock : int
+        在庫数
+    sales : float
+        売上金額
+    """
+    
+    def __init__(self, name: str) -> None:
+        self.name: str = name
+        self.stock: int = 0
+        self.sales: float = 0.0
+    
+    def process_sales(self, items: List[int], price: float) -> float:
+        """複数の販売を処理
+        
+        Parameters
+        ----------
+        items : List[int]
+            各販売の個数リスト
+        price : float
+            単価
+        
+        Returns
+        -------
+        float
+            総売上金額
+        """
+        total_sales = 0.0
+        for count in items:
+            if self.stock >= count:
+                self.stock -= count
+                sale = count * price
+                total_sales += sale
+                print(f"💰 {count}個販売")
+            else:
+                print("⚠️ 在庫不足でスキップ")
+        
+        self.sales += total_sales
+        return total_sales
+
+
+# ============================================================
+# スタイル3: reStructuredText Style（reST）
+# ============================================================
+def calculate_discount_rest(price: float, discount_rate: float) -> float:
+    """割引後の価格を計算する（reStructuredTextスタイル）
+    
+    :param price: 商品の価格
+    :type price: float
+    :param discount_rate: 割引率（0.0〜1.0）
+    :type discount_rate: float
+    :return: 割引後の価格
+    :rtype: float
+    :raises ValueError: discount_rateが0〜1の範囲外の場合
+    
+    .. note::
+        割引率は0.0（割引なし）から1.0（100%割引）の範囲で指定
+    
+    .. code-block:: python
+    
+        >>> calculate_discount_rest(1000, 0.2)
+        800.0
+    """
+    if not 0 <= discount_rate <= 1:
+        raise ValueError("割引率は0〜1の範囲で指定してください")
+    
+    return price * (1 - discount_rate)
+
+
+class ShopReST:
+    """お店クラス（reStructuredTextスタイル）
+    
+    :param name: お店の名前
+    :type name: str
+    
+    :ivar name: お店の名前
+    :vartype name: str
+    :ivar stock: 在庫数
+    :vartype stock: int
+    :ivar sales: 売上金額
+    :vartype sales: float
+    """
+    
+    def __init__(self, name: str) -> None:
+        self.name: str = name
+        self.stock: int = 0
+        self.sales: float = 0.0
+    
+    def get_status(self) -> Dict[str, any]:
+        """お店の状態を取得
+        
+        :return: お店の状態を含む辞書
+        :rtype: Dict[str, any]
+        
+        :Example:
+        
+        >>> shop = ShopReST("大福店")
+        >>> shop.get_status()
+        {'name': '大福店', 'stock': 0, 'sales': 0.0}
+        """
+        return {
+            'name': self.name,
+            'stock': self.stock,
+            'sales': self.sales
+        }
+
+
+# ============================================================
+# スタイル4: Epytext Style（Epydoc）
+# ============================================================
+def format_price_epytext(price: float, currency: str = "円") -> str:
+    """価格を整形して文字列で返す（Epytextスタイル）
+    
+    @param price: 価格
+    @type price: float
+    @param currency: 通貨単位
+    @type currency: str
+    @return: 整形された価格文字列
+    @rtype: str
+    
+    @note: デフォルトの通貨は「円」
+    
+    @example:
+        >>> format_price_epytext(1000)
+        '1,000円'
+        >>> format_price_epytext(1234.56, "USD")
+        '1,234.56USD'
+    """
+    formatted = f"{price:,.2f}" if '.' in str(price) else f"{int(price):,}"
+    return f"{formatted}{currency}"
+
+
+class ShopEpytext:
+    """お店クラス（Epytextスタイル）
+    
+    @ivar name: お店の名前
+    @type name: str
+    @ivar stock: 在庫数
+    @type stock: int
+    @ivar sales: 売上金額
+    @type sales: float
+    """
+    
+    def __init__(self, name: str) -> None:
+        """コンストラクタ
+        
+        @param name: お店の名前
+        @type name: str
+        """
+        self.name: str = name
+        self.stock: int = 0
+        self.sales: float = 0.0
+    
+    def display_info(self) -> None:
+        """お店の情報を表示
+        
+        @return: None
+        @rtype: None
+        """
+        print(f"🏪 {self.name}")
+        print(f"   在庫: {self.stock}個")
+        print(f"   売上: {format_price_epytext(self.sales)}")
+
+
+# ============================================================
+# スタイル5: 型ヒント重視（Type Hints）
+# ============================================================
+def process_order(
+    items: List[Dict[str, any]],
+    discount: Optional[float] = None
+) -> Dict[str, float]:
+    """注文を処理する（型ヒント重視）
+    
+    完全な型ヒントで、IDEの補完とエラーチェックを最大化
+    """
+    total: float = 0.0
+    
+    for item in items:
+        price: float = item.get('price', 0.0)
+        count: int = item.get('count', 0)
+        subtotal: float = price * count
+        total += subtotal
+    
+    if discount is not None:
+        total *= (1 - discount)
+    
+    return {
+        'subtotal': total,
+        'discount': discount or 0.0,
+        'total': total
+    }
+
+
+class ShopTypeHints:
+    """型ヒント重視のお店クラス"""
+    
+    name: str
+    stock: int
+    sales: float
+    products: List[Dict[str, any]]
+    
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.stock = 0
+        self.sales = 0.0
+        self.products = []
+    
+    def add_product(
+        self,
+        name: str,
+        price: float,
+        count: int
+    ) -> None:
+        """商品を追加"""
+        product: Dict[str, any] = {
+            'name': name,
+            'price': price,
+            'count': count
+        }
+        self.products.append(product)
+        self.stock += count
+    
+    def get_total_value(self) -> float:
+        """在庫の総額を計算"""
+        total: float = 0.0
+        product: Dict[str, any]
+        
+        for product in self.products:
+            total += product['price'] * product['count']
+        
+        return total
+
+
+# ============================================================
+# 🐰 実践例: うさうさ店長（全スタイル統合）
+# ============================================================
+def demo_all_styles() -> None:
+    """全てのドキュメンテーションスタイルのデモ"""
+    
+    print("=" * 60)
+    print("🐰 うさうさ店長のふわふわ大福店")
+    print("=" * 60)
+    
+    # Googleスタイル
+    print("\n【Googleスタイル】")
+    shop_google = ShopGoogle("ふわふわ大福店（Google）")
+    shop_google.add_stock(20)
+    shop_google.sell(3, 300)
+    
+    # NumPyスタイル
+    print("\n【NumPyスタイル】")
+    shop_numpy = ShopNumPy("ふわふわ大福店（NumPy）")
+    shop_numpy.stock = 20
+    sales = shop_numpy.process_sales([2, 3, 1], 300)
+    print(f"総売上: {sales}円")
+    
+    # reSTスタイル
+    print("\n【reStructuredTextスタイル】")
+    shop_rest = ShopReST("ふわふわ大福店（reST）")
+    shop_rest.stock = 20
+    status = shop_rest.get_status()
+    print(f"状態: {status}")
+    
+    # Epytextスタイル
+    print("\n【Epytextスタイル】")
+    shop_epytext = ShopEpytext("ふわふわ大福店（Epytext）")
+    shop_epytext.stock = 20
+    shop_epytext.sales = 1800
+    shop_epytext.display_info()
+    
+    # 型ヒント重視
+    print("\n【型ヒント重視】")
+    shop_hints = ShopTypeHints("ふわふわ大福店（TypeHints）")
+    shop_hints.add_product("いちご大福", 350, 10)
+    shop_hints.add_product("あんこ大福", 300, 10)
+    total_value = shop_hints.get_total_value()
+    print(f"在庫総額: {total_value:,}円")
+
+
+# ============================================================
+# メイン処理
+# ============================================================
+if __name__ == "__main__":
+    print("🎓 Pythonドキュメンテーションスタイル比較\n")
+    
+    demo_all_styles()
+    
+    print("\n" + "=" * 60)
+    print("✅ 完了！")
+    print("=" * 60)
+    print("""
+💡 ドキュメンテーションスタイルまとめ:
+
+1. Google Style: シンプルで読みやすい（おすすめ）
+2. NumPy Style: 科学計算向け、詳細な説明
+3. reStructuredText: Sphinx用、Python公式
+4. Epytext: Epydoc用、昔から使われている
+5. 型ヒント: IDE補完、エラーチェックに最適
+
+新人エンジニアには「Google Style + 型ヒント」がおすすめ！
+""")
