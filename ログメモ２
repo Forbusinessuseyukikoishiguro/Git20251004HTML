@@ -1,0 +1,165 @@
+よい質問です！
+
+Python の `TimedRotatingFileHandler` を使って **`app_YYYY-MM-DD.log` 形式のファイル名でログを保存・日付でローテーション** したい場合、少し工夫が必要です。
+
+---
+
+## ✅ 結論：`TimedRotatingFileHandler` + `suffix` で日付つきログ名を実現
+
+```python
+import os
+import logging
+from logging.handlers import TimedRotatingFileHandler
+
+# --- ログ出力用ディレクトリを作成 ---
+os.makedirs("logs", exist_ok=True)
+
+# --- ロガーを作成 ---
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# --- 日時付きファイル名のベース ---
+log_path = "logs/app.log"  # ベース名（ここに .YYYY-MM-DD が自動で付く）
+
+# --- TimedRotatingFileHandlerを設定 ---
+file_handler = TimedRotatingFileHandler(
+    filename=log_path,     # ベースファイル名
+    when="midnight",       # 毎日0時にローテーション
+    interval=1,            # 1日ごと
+    backupCount=7,         # 過去7日分保持
+    encoding="utf-8",
+    utc=False              # ローカル時刻基準（TrueにするとUTC）
+)
+
+# --- ローテーション後のファイル名の suffix を指定 ---
+file_handler.suffix = "%Y-%m-%d"  # app.log.2025-10-05 の形式になる
+
+# --- ログフォーマットを設定 ---
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] - %(message)s')
+file_handler.setFormatter(formatter)
+
+# --- ロガーにハンドラーを追加 ---
+logger.addHandler(file_handler)
+
+# --- ログ出力テスト ---
+logger.info("このログは app.log に出力され、日付ごとに app.log.YYYY-MM-DD に分かれます")
+```
+
+---
+
+## ✅ 出力されるログファイル（例）
+
+実行初日は：
+
+```
+logs/app.log   ← 今日のログ
+```
+
+翌日になりローテーションされると：
+
+```
+logs/app.log.2025-10-05
+logs/app.log   ← 新しいログ
+```
+
+このように、**「ベースファイル名.app.log」＋「日付」**の形式で自動生成されます。
+
+---
+
+## ✅ 注意点
+
+| 項目                                                             | 説明 |
+| -------------------------------------------------------------- | -- |
+| `file_handler.suffix` は明示的に指定しないと、`log.2025-10-05` のような名前にならない |    |
+| `when='midnight'` は `when='D'` と同じ意味（1日ごと）                     |    |
+| ログファイルは最初は `app.log` に書き込まれ、日付変更時に `app.log.日付` にリネームされる       |    |
+
+---
+
+## ✅ オプション：画面（コンソール）にも出したい場合
+
+```python
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+console_handler.setLevel(logging.INFO)
+logger.addHandler(console_handler)
+```
+
+---
+
+## ✅ 日付を最初からファイル名に入れたい場合（例：app_2025-10-05.log）
+
+これは **`TimedRotatingFileHandler`ではできません（自動リネーム制御が強制）**
+そのため、以下のどちらかが必要になります：
+
+### ❌ NG（TimedRotatingFileHandlerで custom name）
+
+```python
+# TimedRotatingFileHandler ではできない例：
+filename='logs/app_%Y-%m-%d.log'  # 無効
+```
+
+### ✅ OK（自分でファイル名を毎日切り替える）
+
+→ 手動で `datetime.now()` を使ってファイル名を作る方法（前回説明済）
+
+---
+
+## ✅ まとめ
+
+| 目的                                              | 方法                                                       |
+| ----------------------------------------------- | -------------------------------------------------------- |
+| `app.log.2025-10-05` 形式で日ごとに分けたい                | ✅ `TimedRotatingFileHandler + suffix`                    |
+| `app_2025-10-05.log` のように**最初から日付付きのファイル名**にしたい | ❌ `TimedRotatingFileHandler` では不可 → ✅ 自分で `datetime` で生成 |
+
+---
+
+## 📦 ファイル名を自由にカスタマイズしつつ日ごとにローテーションしたい場合
+
+→ 自作のログローテーター or 外部ライブラリ（loguruなど）の利用がおすすめです。
+
+---
+
+## ✅ 最後に：完全テンプレート（ファイル＋画面出力・日別ローテ）
+
+```python
+import os
+import logging
+from logging.handlers import TimedRotatingFileHandler
+
+# ログディレクトリ作成
+os.makedirs("logs", exist_ok=True)
+
+# ロガー作成
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# フォーマッター定義
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] - %(message)s')
+
+# 日ごとにローテーションされるログファイル（suffixあり）
+file_handler = TimedRotatingFileHandler(
+    filename='logs/app.log',
+    when='midnight',
+    interval=1,
+    backupCount=7,
+    encoding='utf-8'
+)
+file_handler.suffix = "%Y-%m-%d"
+file_handler.setFormatter(formatter)
+
+# コンソール用ハンドラー
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+
+# ハンドラー登録
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+# ログ出力
+logger.info("日付付きログファイルでの記録が始まりました。")
+```
+
+---
+
+必要なら、`loguru`ライブラリなどを使ったさらに簡潔な方法も紹介できます。興味ありますか？
