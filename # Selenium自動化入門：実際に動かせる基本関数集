@@ -1,0 +1,277 @@
+# Selenium自動化入門：実際に動かせる基本関数集
+
+## はじめに
+
+本記事では、Seleniumを使ったブラウザ自動化の基本的な関数を紹介します。すべてのコードは**すぐに実行可能**で、Google検索を例に実際の動作を確認できます。
+
+## 環境構築
+
+```bash
+pip install selenium webdriver-manager
+```
+
+## 完全動作サンプルコード
+
+以下は、すべての関数を実装した完全なコードです。
+
+```python
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+import time
+
+# ========================================
+# 関数定義
+# ========================================
+
+def setup_driver():
+    """
+    WebDriverを初期化する関数
+    
+    Returns:
+        WebDriver: 初期化済みのWebDriverオブジェクト
+    """
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service)
+    print("✓ WebDriverを初期化しました")
+    return driver
+
+
+def search_and_navigate(driver, search_box_xpath, query, submit_button_xpath=None):
+    """
+    検索ボックスに文字を入力し、画面遷移する関数
+    
+    Args:
+        driver (WebDriver): WebDriverオブジェクト
+        search_box_xpath (str): 検索ボックスのXPath
+        query (str): 検索キーワード
+        submit_button_xpath (str): 送信ボタンのXPath（省略可能）
+    """
+    search_box = driver.find_element(By.XPATH, search_box_xpath)
+    search_box.send_keys(query)
+    
+    if submit_button_xpath:
+        driver.find_element(By.XPATH, submit_button_xpath).click()
+    else:
+        search_box.send_keys(Keys.RETURN)
+    
+    print(f"✓ '{query}' で検索して画面遷移しました")
+
+
+def take_screenshot(driver, filename="screenshot.png"):
+    """
+    スクリーンショットを撮影して保存する関数
+    
+    Args:
+        driver (WebDriver): WebDriverオブジェクト
+        filename (str): スクリーンショットの保存先
+    """
+    driver.save_screenshot(filename)
+    print(f"✓ スクリーンショットを保存しました: {filename}")
+
+
+def click_element_by_xpath(driver, xpath):
+    """
+    XPathを指定して要素をクリックする関数
+    
+    Args:
+        driver (WebDriver): WebDriverオブジェクト
+        xpath (str): クリック対象の要素のXPath
+    """
+    element = driver.find_element(By.XPATH, xpath)
+    element.click()
+    print(f"✓ XPath '{xpath}' の要素をクリックしました")
+
+
+# ========================================
+# メイン実行部分
+# ========================================
+
+if __name__ == "__main__":
+    print("=== Selenium自動化デモを開始します ===\n")
+    
+    # 1. WebDriverのセットアップ
+    driver = setup_driver()
+    
+    try:
+        # 2. Googleを開く
+        print("\n▶ Googleを開いています...")
+        driver.get("https://www.google.com")
+        time.sleep(2)
+        
+        # 3. 検索ボックスに入力して検索
+        print("\n▶ 検索を実行しています...")
+        search_and_navigate(
+            driver, 
+            "//input[@name='q']",  # Google検索ボックスのXPath
+            "Selenium Python チュートリアル"
+        )
+        time.sleep(3)
+        
+        # 4. 検索結果ページのスクリーンショット撮影
+        print("\n▶ スクリーンショットを撮影しています...")
+        take_screenshot(driver, "google_search_result.png")
+        
+        # 5. ページタイトルを表示
+        print(f"\n✓ 現在のページタイトル: {driver.title}")
+        
+        print("\n=== デモが正常に完了しました ===")
+        print("※ 5秒後にブラウザを閉じます")
+        time.sleep(5)
+        
+    except Exception as e:
+        print(f"\n✗ エラーが発生しました: {e}")
+        take_screenshot(driver, "error_screenshot.png")
+        
+    finally:
+        driver.quit()
+        print("\n✓ ブラウザを閉じました")
+```
+
+## 実行方法
+
+1. 上記のコードを `selenium_demo.py` として保存
+2. ターミナルで実行
+
+```bash
+python selenium_demo.py
+```
+
+## 実行結果（コンソール出力例）
+
+```
+=== Selenium自動化デモを開始します ===
+
+✓ WebDriverを初期化しました
+
+▶ Googleを開いています...
+
+▶ 検索を実行しています...
+✓ 'Selenium Python チュートリアル' で検索して画面遷移しました
+
+▶ スクリーンショットを撮影しています...
+✓ スクリーンショットを保存しました: google_search_result.png
+
+✓ 現在のページタイトル: Selenium Python チュートリアル - Google 検索
+
+=== デモが正常に完了しました ===
+※ 5秒後にブラウザを閉じます
+
+✓ ブラウザを閉じました
+```
+
+## 各関数の詳細解説
+
+### 1. setup_driver()
+
+```python
+driver = setup_driver()
+```
+
+- ChromeDriverを自動でダウンロード・セットアップ
+- WebDriverオブジェクトを返す
+- 初回実行時のみダウンロードが発生
+
+### 2. search_and_navigate()
+
+```python
+search_and_navigate(
+    driver,
+    "//input[@name='q']",
+    "検索したいキーワード"
+)
+```
+
+- 検索ボックスにテキストを入力
+- Enterキーで検索実行
+- ボタンのXPathを指定すればクリックも可能
+
+### 3. take_screenshot()
+
+```python
+take_screenshot(driver, "result.png")
+```
+
+- 現在のページのスクリーンショットを保存
+- ファイル名を指定可能（デフォルト: screenshot.png）
+
+### 4. click_element_by_xpath()
+
+```python
+click_element_by_xpath(driver, "//button[@id='submit']")
+```
+
+- XPathで要素を特定してクリック
+- ボタン、リンクなどあらゆる要素に対応
+
+## 応用例：Amazon商品検索
+
+```python
+if __name__ == "__main__":
+    driver = setup_driver()
+    
+    try:
+        # Amazonを開く
+        driver.get("https://www.amazon.co.jp")
+        time.sleep(2)
+        
+        # 商品を検索
+        search_and_navigate(
+            driver,
+            "//input[@id='twotabsearchtextbox']",
+            "Python プログラミング 本"
+        )
+        time.sleep(3)
+        
+        # 結果を保存
+        take_screenshot(driver, "amazon_search.png")
+        
+        time.sleep(5)
+        
+    finally:
+        driver.quit()
+```
+
+## よくあるエラーと対処法
+
+### エラー1: 要素が見つからない
+
+```
+selenium.common.exceptions.NoSuchElementException
+```
+
+**対処法**: XPathが正しいか確認。待機時間を追加。
+
+```python
+time.sleep(2)  # ページ読み込み待機
+```
+
+### エラー2: ChromeDriverのバージョン不一致
+
+**対処法**: `webdriver-manager`を使えば自動解決！
+
+```python
+from webdriver_manager.chrome import ChromeDriverManager
+```
+
+## まとめ
+
+- **4つの基本関数**でブラウザ自動化が可能
+- **コピペで即実行**できるコードを提供
+- Google検索を例に実際の動作を確認
+
+次回は、エラーハンドリングとログ機能を追加した実務版をお届けします！
+
+## 参考リンク
+
+- [Selenium公式ドキュメント](https://www.selenium.dev/documentation/)
+- [webdriver-manager GitHub](https://github.com/SergeyPirogov/webdriver_manager)
+
+---
+
+**動作確認環境**
+- Python 3.8+
+- Selenium 4.x
+- Google Chrome（最新版）
