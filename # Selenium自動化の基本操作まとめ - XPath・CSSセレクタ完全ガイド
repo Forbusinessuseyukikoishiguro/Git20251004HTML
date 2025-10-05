@@ -1,0 +1,224 @@
+# Selenium自動化の基本操作まとめ - XPath・CSSセレクタ完全ガイド
+
+こんにちは、Python先生です!今回はSeleniumを使ったWebスクレイピングや自動化でよく使う基本操作を、実践的なコード例とともにご紹介します。
+
+## 目次
+1. CSSセレクタでクリックする
+2. XPathでフォームに入力する
+3. CSSセレクタでフォームに入力する
+4. チェックボックスを操作する
+5. 検索フォームの操作と画面遷移
+6. 例外処理のベストプラクティス
+
+## 環境準備
+
+```python
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import NoSuchElementException, WebDriverException
+import time
+```
+
+## 1. CSSセレクタでクリックする関数
+
+CSSセレクタは直感的でわかりやすいのが特徴です。
+
+```python
+def click_element_by_css(driver, css_selector):
+    """
+    CSSセレクタを指定して要素をクリックする関数。
+    
+    Args:
+        driver (WebDriver): WebDriverオブジェクト。
+        css_selector (str): クリック対象の要素のCSSセレクタ。
+    """
+    try:
+        element = driver.find_element(By.CSS_SELECTOR, css_selector)
+        element.click()
+        print(f"CSSセレクタ '{css_selector}' の要素をクリックしました。")
+    except NoSuchElementException:
+        print(f"エラー: CSSセレクタ '{css_selector}' が見つかりませんでした。")
+    except WebDriverException as e:
+        print(f"クリック時にエラーが発生しました: {e}")
+```
+
+## 2. XPathでフォームに入力する関数
+
+XPathは複雑な階層構造の要素を指定するのに便利です。
+
+```python
+def input_text_by_xpath(driver, xpath, text):
+    """
+    XPathを指定してフォームにテキストを入力する関数。
+    
+    Args:
+        driver (WebDriver): WebDriverオブジェクト。
+        xpath (str): 入力対象のフォームのXPath。
+        text (str): 入力するテキスト。
+    """
+    try:
+        form = driver.find_element(By.XPATH, xpath)
+        form.clear()  # 既存の入力をクリア
+        form.send_keys(text)
+        print(f"XPath '{xpath}' に '{text}' を入力しました。")
+    except NoSuchElementException:
+        print(f"エラー: XPath '{xpath}' が見つかりませんでした。")
+    except WebDriverException as e:
+        print(f"入力時にエラーが発生しました: {e}")
+```
+
+## 3. CSSセレクタで入力する関数
+
+```python
+def input_text_by_css(driver, css_selector, text):
+    """
+    CSSセレクタを指定してフォームにテキストを入力する関数。
+    
+    Args:
+        driver (WebDriver): WebDriverオブジェクト。
+        css_selector (str): 入力対象のフォームのCSSセレクタ。
+        text (str): 入力するテキスト。
+    """
+    try:
+        form = driver.find_element(By.CSS_SELECTOR, css_selector)
+        form.clear()  # 既存の入力をクリア
+        form.send_keys(text)
+        print(f"CSSセレクタ '{css_selector}' に '{text}' を入力しました。")
+    except NoSuchElementException:
+        print(f"エラー: CSSセレクタ '{css_selector}' が見つかりませんでした。")
+    except WebDriverException as e:
+        print(f"入力時にエラーが発生しました: {e}")
+```
+
+## 4. チェックボックスを操作する関数
+
+チェックボックスの状態を確認してから操作することで、二重クリックを防ぎます。
+
+```python
+def check_checkbox_by_css(driver, css_selector):
+    """
+    CSSセレクタを指定してチェックボックスを選択する関数。
+    
+    Args:
+        driver (WebDriver): WebDriverオブジェクト。
+        css_selector (str): チェック対象のチェックボックスのCSSセレクタ。
+    """
+    try:
+        checkbox = driver.find_element(By.CSS_SELECTOR, css_selector)
+        if not checkbox.is_selected():
+            checkbox.click()
+            print(f"CSSセレクタ '{css_selector}' のチェックボックスを選択しました。")
+        else:
+            print(f"CSSセレクタ '{css_selector}' のチェックボックスは既に選択されています。")
+    except NoSuchElementException:
+        print(f"エラー: CSSセレクタ '{css_selector}' が見つかりませんでした。")
+    except WebDriverException as e:
+        print(f"チェックボックス操作時にエラーが発生しました: {e}")
+```
+
+## 5. 検索フォームの操作と画面遷移
+
+検索ボックスに入力してEnterキーまたはボタンクリックで画面遷移する汎用関数です。
+
+```python
+def search_and_navigate(driver, search_box_xpath, query, submit_button_xpath=None):
+    """
+    検索ボックスに文字を入力し、画面遷移する関数。
+    
+    Args:
+        driver (WebDriver): WebDriverオブジェクト。
+        search_box_xpath (str): 検索ボックスのXPath。
+        query (str): 検索キーワード。
+        submit_button_xpath (str): 送信ボタンのXPath(省略可能)。
+    """
+    try:
+        # 検索ボックスを探してキーワードを入力
+        search_box = driver.find_element(By.XPATH, search_box_xpath)
+        search_box.clear()
+        search_box.send_keys(query)
+        print(f"検索ボックスに '{query}' を入力しました。")
+        
+        # 送信ボタンが指定されている場合
+        if submit_button_xpath:
+            try:
+                submit_button = driver.find_element(By.XPATH, submit_button_xpath)
+                submit_button.click()
+                print("送信ボタンをクリックしました。")
+            except NoSuchElementException:
+                print(f"送信ボタンのXPath '{submit_button_xpath}' が見つかりませんでした。")
+                # Enterキーで代替
+                search_box.send_keys(Keys.RETURN)
+                print("Enterキーで検索を実行しました。")
+        else:
+            # Enterキーで送信
+            search_box.send_keys(Keys.RETURN)
+            print("Enterキーを押して検索を実行しました。")
+            
+    except NoSuchElementException:
+        print(f"検索ボックスのXPath '{search_box_xpath}' が見つかりませんでした。")
+    except WebDriverException as e:
+        print(f"WebDriverのエラーが発生しました: {e}")
+    except Exception as e:
+        print(f"予期しないエラーが発生しました: {e}")
+```
+
+## 実践例: Google検索の自動化
+
+すべての関数を使った実践例です。
+
+```python
+def main():
+    """
+    実際の使用例: Google検索を自動化
+    """
+    # WebDriverの初期化
+    driver = webdriver.Chrome()
+    
+    try:
+        # Googleを開く
+        driver.get("https://www.google.com")
+        time.sleep(2)
+        
+        # 検索ボックスのXPathとCSSセレクタ
+        search_box_xpath = '//textarea[@name="q"]'
+        search_box_css = 'textarea[name="q"]'
+        
+        # 方法1: XPathで検索
+        input_text_by_xpath(driver, search_box_xpath, "Python Selenium")
+        time.sleep(1)
+        
+        # Enterキーで検索実行
+        search_box = driver.find_element(By.XPATH, search_box_xpath)
+        search_box.send_keys(Keys.RETURN)
+        time.sleep(3)
+        
+        # 検索結果の最初のリンクをクリック(例)
+        # click_element_by_css(driver, 'h3')
+        
+        print("検索が正常に完了しました!")
+        
+    except Exception as e:
+        print(f"エラーが発生しました: {e}")
+    
+    finally:
+        # ブラウザを閉じる前に少し待機
+        time.sleep(3)
+        driver.quit()
+        print("ブラウザを閉じました。")
+
+if __name__ == "__main__":
+    main()
+```
+
+## まとめ
+
+この記事では、Seleniumでよく使う基本操作を関数化して紹介しました。以下のポイントを押さえておきましょう:
+
+- **例外処理は必須**: `try-except`で要素が見つからない場合に対応
+- **XPath vs CSSセレクタ**: どちらも使えるようにしておくと便利
+- **`clear()`の活用**: フォーム入力前に既存の値をクリア
+- **チェックボックスの状態確認**: `is_selected()`で二重クリックを防ぐ
+- **待機時間の調整**: `time.sleep()`や明示的な待機を適切に使用
+
+これらの関数をベースに、自分のプロジェクトに合わせてカスタマイズしてみてください!
